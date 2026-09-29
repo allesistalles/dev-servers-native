@@ -3,6 +3,7 @@ import SwiftUI
 struct PopoverRoot: View {
     @ObservedObject var monitor: ServerMonitor
     let openSettings: () -> Void
+    var closePopover: () -> Void = {}
     var onContentHeight: (CGFloat) -> Void = { _ in }
 
     var body: some View {
@@ -14,6 +15,7 @@ struct PopoverRoot: View {
                 guard height > 1 else { return }
                 onContentHeight(min(height, Theme.popoverMaxHeight))
             }
+            .onExitCommand(perform: closePopover)
             .onAppear { monitor.start() }
     }
 }

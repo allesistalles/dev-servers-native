@@ -4,7 +4,7 @@ import SwiftUI
 struct ServersView: View {
     @ObservedObject var monitor: ServerMonitor
     let openSettings: () -> Void
-    @State private var boardHeight: CGFloat = 0
+    @State private var contentHeight: CGFloat = 0
 
     /// Gear row (12pt padding, 26pt button, divider). Kept out of the scroller.
     private var maxBoardHeight: CGFloat { Theme.popoverMaxHeight - 52 }
@@ -16,14 +16,16 @@ struct ServersView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                BoardSections(monitor: monitor)
-                    // Ideal height, not the popover's current proposal, so the
-                    // measurement still grows after the window has opened short.
-                    .fixedSize(horizontal: false, vertical: true)
-                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { boardHeight = $0 }
+            Group {
+                if contentHeight > maxBoardHeight {
+                    ScrollView {
+                        boardContent
+                    }
+                    .frame(height: maxBoardHeight)
+                } else {
+                    boardContent
+                }
             }
-            .frame(height: boardHeight > 1 ? min(boardHeight, maxBoardHeight) : nil)
             SectionDivider()
             HStack {
                 Spacer()
@@ -40,5 +42,14 @@ struct ServersView: View {
             }
             .padding(12)
         }
+    }
+
+    private var boardContent: some View {
+        BoardSections(monitor: monitor)
+            .fixedSize(horizontal: false, vertical: true)
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                guard height > 1 else { return }
+                contentHeight = height
+            }
     }
 }

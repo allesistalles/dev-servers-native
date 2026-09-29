@@ -6,23 +6,26 @@ private let popoverEscapeKey: UInt16 = 53
 
 /// The menu bar icon and the popover it toggles.
 ///
-/// MenuBarExtra's window has no close API. This owns an NSStatusItem and an
-/// NSPopover instead. The app stays LSUIElement / accessory: nothing here calls
-/// setActivationPolicy.
+/// MenuBarExtra's window has no close API. This owns an NSStatusItem and a
+/// transient panel instead. The app stays LSUIElement / accessory: nothing here
+/// calls setActivationPolicy.
 @MainActor
-final class StatusItemController: NSObject, NSPopoverDelegate {
+final class StatusItemController: NSObject {
     static let shared = StatusItemController()
 
     private var statusItem: NSStatusItem?
-    private let popover = NSPopover()
+    private var boardPanel: NSPanel?
+    private var boardHost: NSHostingController<LocalizedView<PopoverRoot>>?
     private var monitor: ServerMonitor?
     private var settingsWindow: NSWindow?
     private var boardCancellable: AnyCancellable?
     private var defaultsObserver: NSObjectProtocol?
-    private var resignObserver: NSObjectProtocol?
+    private var activateObserver: NSObjectProtocol?
     private var spaceObserver: NSObjectProtocol?
     private var globalMonitor: Any?
     private var localMonitor: Any?
+    private var dismissPollTimer: Timer?
+    private var boardOpen = false
     /// Set when a click on the status button is what closed the popover, so the
     /// following mouseUp does not open it again.
     private var suppressNextOpen = false
@@ -50,27 +53,15 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
 
-        let host = NSHostingController(rootView: LocalizedView {
-            PopoverRoot(monitor: monitor, openSettings: { [weak self] in
-                self?.openSettings()
-            }, onContentHeight: { [weak self] height in
-                self?.applyPopoverHeight(height)
-            })
-        })
-        // preferredContentSize is updated from SwiftUI, but NSPopover does not
-        // resize itself when that value changes after show. applyPopoverHeight
-        // writes popover.contentSize from the measured board height.
-        host.sizingOptions = [.preferredContentSize]
-        host.view.clipsToBounds = true
-        popover.contentViewController = host
-        popover.behavior = .transient
-        popover.animates = true
-        popover.delegate = self
+        attachBoardHost(monitor: monitor)
 
         boardCancellable = monitor.$board
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
-                MainActor.assumeIsolated { self?.updateIcon() }
+                MainActor.assumeIsolated {
+                    self?.updateIcon()
+                    self?.remeasureBoardIfShown()
+                }
             }
         defaultsObserver = NotificationCenter.default.addObserver(
             forName: UserDefaults.didChangeNotification,
@@ -80,13 +71,6 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             MainActor.assumeIsolated { self?.updateIcon() }
         }
         updateIcon()
-        resignObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.didResignActiveNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.closePopover() }
-        }
         spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil,
@@ -94,20 +78,87 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.closePopover() }
         }
+        activateObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            MainActor.assumeIsolated {
+                guard let self, self.boardOpen else { return }
+                let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication
+                if app?.bundleIdentifier != Bundle.main.bundleIdentifier {
+                    self.closePopover()
+                }
+            }
+        }
+    }
+
+    private func attachBoardHost(monitor: ServerMonitor) {
+        let host = NSHostingController(rootView: LocalizedView {
+            PopoverRoot(monitor: monitor, openSettings: { [weak self] in
+                self?.openSettings()
+            }, closePopover: { [weak self] in
+                self?.closePopover()
+            }, onContentHeight: { [weak self] height in
+                self?.applyBoardHeight(height)
+            })
+        })
+        host.sizingOptions = [.preferredContentSize]
+        host.view.clipsToBounds = true
+        boardHost = host
+    }
+
+    private func remeasureBoardIfShown() {
+        guard boardOpen, let host = boardHost else { return }
+        host.view.layoutSubtreeIfNeeded()
+        let height = host.view.fittingSize.height
+        guard height > 1 else { return }
+        applyBoardHeight(height)
     }
 
     /// Width stays 400. Height tracks the board and never passes the popover cap.
-    private func applyPopoverHeight(_ height: CGFloat) {
+    private func applyBoardHeight(_ height: CGFloat) {
         let clamped = min(max(height, 1), Theme.popoverMaxHeight)
         let size = NSSize(width: Theme.popoverWidth, height: clamped)
-        guard abs(popover.contentSize.width - size.width) > 0.5
-                || abs(popover.contentSize.height - size.height) > 0.5 else { return }
-        popover.contentSize = size
+        boardHost?.preferredContentSize = size
+        guard let panel = boardPanel else { return }
+        guard abs(panel.frame.width - size.width) > 0.5 || abs(panel.frame.height - size.height) > 0.5 else { return }
+        positionBoardPanel(size: size)
     }
 
-    /// ⌥⌘P and a plain click. Shown → close. Hidden → show.
+    private func positionBoardPanel(size: NSSize) {
+        guard let button = statusItem?.button, let barWindow = button.window, let panel = boardPanel else { return }
+        let buttonOnScreen = barWindow.convertToScreen(button.frame)
+        var frame = panel.frame
+        frame.size = size
+        frame.origin.x = buttonOnScreen.midX - size.width / 2
+        frame.origin.y = buttonOnScreen.minY - size.height - 4
+        panel.setFrame(frame, display: true)
+    }
+
+    private func makeBoardPanel() -> NSPanel {
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: Theme.popoverWidth, height: 320),
+            styleMask: [.nonactivatingPanel, .borderless, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isFloatingPanel = true
+        panel.level = .popUpMenu
+        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.isMovableByWindowBackground = false
+        panel.hidesOnDeactivate = false
+        panel.backgroundColor = .clear
+        panel.hasShadow = true
+        panel.isReleasedWhenClosed = false
+        if let host = boardHost {
+            panel.contentViewController = host
+        }
+        return panel
+    }
+
     func togglePopover() {
-        if popover.isShown {
+        if boardOpen {
             closePopover()
         } else {
             showPopover()
@@ -115,37 +166,36 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     }
 
     func showPopover() {
-        guard let button = statusItem?.button, !popover.isShown else { return }
-        NSApp.activate()
+        guard let button = statusItem?.button, !boardOpen else { return }
+        NSApp.activate(ignoringOtherApps: true)
         button.isHighlighted = true
-        popover.behavior = .transient
-        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-        guard popover.isShown else {
-            button.isHighlighted = false
-            return
+        if boardPanel == nil {
+            boardPanel = makeBoardPanel()
         }
-        makePopoverKey()
+        positionBoardPanel(size: NSSize(width: Theme.popoverWidth, height: 320))
+        boardPanel?.orderFrontRegardless()
+        boardOpen = true
         installMonitors()
-    }
-
-    /// Esc and cancelOperation only reach the popover once its window is key.
-    private func makePopoverKey() {
-        popover.contentViewController?.view.window?.makeKey()
         DispatchQueue.main.async { [weak self] in
-            MainActor.assumeIsolated {
-                guard self?.popover.isShown == true else { return }
-                self?.popover.contentViewController?.view.window?.makeKey()
-            }
+            MainActor.assumeIsolated { self?.remeasureBoardIfShown() }
         }
     }
 
     func closePopover() {
-        guard popover.isShown else {
+        guard boardOpen else {
             removeMonitors()
             statusItem?.button?.isHighlighted = false
             return
         }
-        popover.performClose(nil)
+        boardPanel?.orderOut(nil)
+        finishPopoverClose()
+    }
+
+    private func finishPopoverClose() {
+        boardOpen = false
+        removeMonitors()
+        statusItem?.button?.isHighlighted = false
+        suppressIfStatusClick()
     }
 
     func openSettings() {
@@ -156,15 +206,6 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         window.title = L10n.text("Settings")
         window.makeKeyAndOrderFront(nil)
         NSApp.activate()
-    }
-
-    nonisolated func popoverDidClose(_ notification: Notification) {
-        // AppKit calls this on the main thread, before the status button's mouseUp.
-        MainActor.assumeIsolated {
-            self.removeMonitors()
-            self.statusItem?.button?.isHighlighted = false
-            self.suppressIfStatusClick()
-        }
     }
 
     private func makeSettingsWindow(monitor: ServerMonitor) -> NSWindow {
@@ -213,9 +254,6 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         })
     }
 
-    /// A transient popover closes on mouseDown outside its window, including a
-    /// mouseDown on this status button. The button's action is mouseUp, which
-    /// would otherwise open the popover again.
     private func suppressIfStatusClick() {
         guard let event = NSApp.currentEvent else { return }
         guard event.type == .leftMouseDown || event.type == .rightMouseDown else { return }
@@ -228,16 +266,28 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
 
     private func installMonitors() {
         removeMonitors()
-        // Clicks in other apps never reach a transient popover of an accessory app.
+        let timer = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, self.boardOpen else { return }
+                if NSWorkspace.shared.frontmostApplication?.bundleIdentifier != Bundle.main.bundleIdentifier {
+                    self.closePopover()
+                }
+            }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        dismissPollTimer = timer
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated { self?.closePopover() }
+            Task { @MainActor in
+                guard let self, self.boardOpen, let panel = self.boardPanel else { return }
+                if !panel.frame.contains(NSEvent.mouseLocation) {
+                    self.closePopover()
+                }
             }
         }
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard event.keyCode == popoverEscapeKey else { return event }
             let closed = MainActor.assumeIsolated { () -> Bool in
-                guard let self, self.popover.isShown else { return false }
+                guard let self, self.boardOpen else { return false }
                 self.closePopover()
                 return true
             }
@@ -246,6 +296,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     }
 
     private func removeMonitors() {
+        dismissPollTimer?.invalidate()
+        dismissPollTimer = nil
         if let globalMonitor {
             NSEvent.removeMonitor(globalMonitor)
             self.globalMonitor = nil

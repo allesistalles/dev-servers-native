@@ -19,6 +19,8 @@ public struct OverviewBoard: Equatable, Sendable {
     public var pinned: [BoardItem]
     public var fleet: [BoardItem]
     public var attention: [BoardItem]
+    /// Local listeners that are up, excluding cards already in the sections above.
+    public var running: [BoardItem]
 }
 
 public struct ProbeJob: Equatable, Sendable {
@@ -377,7 +379,25 @@ public enum BoardMerge {
 
     public static func overview(_ items: [BoardItem], query: String = "") -> OverviewBoard {
         let searched = filter(items, query: query, tab: nil)
-        return OverviewBoard(stats: stats(items), pinned: pinned(searched), fleet: fleet(searched), attention: attention(items))
+        let attention = attention(items)
+        let pinned = pinned(searched)
+        let fleet = fleet(searched)
+        let skip = Set((attention + pinned + fleet).map(overviewCardKey))
+        let running = runningLocal(searched, skip: skip)
+        return OverviewBoard(stats: stats(items), pinned: pinned, fleet: fleet, attention: attention, running: running)
+    }
+
+    static func overviewCardKey(_ item: BoardItem) -> String {
+        if !item.id.isEmpty { return item.id }
+        return "\(item.title):\(item.port):\(item.host)"
+    }
+
+    /// Running Mac listeners and dev servers for the Overview highlights.
+    public static func runningLocal(_ items: [BoardItem], skip: Set<String> = []) -> [BoardItem] {
+        filter(items, tab: "local").filter { card in
+            guard !isSystemCard(card), !isStoppedHelper(card), card.status != "down" else { return false }
+            return !skip.contains(overviewCardKey(card))
+        }
     }
 
     public static func stats(_ items: [BoardItem]) -> OverviewStats {

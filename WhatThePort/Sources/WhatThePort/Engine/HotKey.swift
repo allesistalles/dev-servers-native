@@ -19,7 +19,9 @@ final class HotKey {
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in
             DispatchQueue.main.async {
-                StatusItemController.shared.togglePopover()
+                Task { @MainActor in
+                    StatusItemController.shared.togglePopover()
+                }
             }
             return noErr
         }, 1, &eventType, nil, &handlerRef)

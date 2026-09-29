@@ -78,6 +78,12 @@ struct BoardSections: View {
                 BoardCard(item: card, monitor: monitor)
             }
         }
+        if !view.running.isEmpty {
+            GroupLabel(title: L10n.text("Running"))
+            ForEach(view.running) { card in
+                BoardCard(item: card, monitor: monitor)
+            }
+        }
         if !view.pinned.isEmpty {
             GroupLabel(title: L10n.text("Pinned"))
             ForEach(view.pinned) { card in
@@ -90,7 +96,7 @@ struct BoardSections: View {
                 BoardCard(item: card, monitor: monitor)
             }
         }
-        if view.attention.isEmpty && view.pinned.isEmpty && view.fleet.isEmpty {
+        if view.attention.isEmpty && view.pinned.isEmpty && view.fleet.isEmpty && view.running.isEmpty {
             Text(L10n.text("Nothing here"))
                 .font(Theme.caption)
                 .foregroundStyle(Theme.text3)

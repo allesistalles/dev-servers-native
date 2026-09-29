@@ -29,27 +29,13 @@ struct DevServersApp: App {
         // SwiftUI requires a scene. A Settings scene is shown at launch and
         // titled "Dev Servers Settings", so this window stays suppressed.
         // The real Settings window is created only from the gear, ⌘,, or the menu.
-        bootstrap
+        suppressedBootstrap
     }
 
-    @SceneBuilder private var bootstrap: some Scene {
-        if #available(macOS 15.0, *) {
-            suppressedBootstrap
-        } else {
-            Window("bootstrap", id: "bootstrap") {
-                Color.clear.frame(width: 1, height: 1)
-            }
-            .windowResizability(.contentSize)
-        }
-    }
-
-    @available(macOS 15.0, *)
+    /// A never-inserted MenuBarExtra: a valid scene that shows no window or icon.
+    /// The status item and Settings window are owned by StatusItemController.
     private var suppressedBootstrap: some Scene {
-        Window("bootstrap", id: "bootstrap") {
-            Color.clear.frame(width: 1, height: 1)
-        }
-        .windowResizability(.contentSize)
-        .defaultLaunchBehavior(.suppressed)
+        MenuBarExtra("Dev Servers", isInserted: .constant(false)) { EmptyView() }
     }
 }
 
