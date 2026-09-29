@@ -2,7 +2,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APP_NAME="WhatThePort"
+# Finder shows this bundle as Dev Servers. The SwiftPM executable stays WhatThePort.
+APP_NAME="Dev Servers"
+BINARY_NAME="WhatThePort"
 APP_DIR=".build/${APP_NAME}.app"
 CONTENTS_DIR="${APP_DIR}/Contents"
 
@@ -31,7 +33,7 @@ fi
 
 rm -rf "${APP_DIR}"
 mkdir -p "${CONTENTS_DIR}/MacOS" "${CONTENTS_DIR}/Resources" "${CONTENTS_DIR}/Frameworks"
-cp "${BIN_DIR}/${APP_NAME}" "${CONTENTS_DIR}/MacOS/"
+cp "${BIN_DIR}/${BINARY_NAME}" "${CONTENTS_DIR}/MacOS/"
 cp .build/configured-Info.plist "${CONTENTS_DIR}/Info.plist"
 cp -R "Resources/Fonts" "${CONTENTS_DIR}/Resources/"
 cp "Resources/AppIcon.icns" "${CONTENTS_DIR}/Resources/"

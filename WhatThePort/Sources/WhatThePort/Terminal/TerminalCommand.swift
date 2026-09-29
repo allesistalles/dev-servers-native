@@ -1,10 +1,11 @@
 import Darwin
+import DevServersCore
 import Foundation
 
 /// `wtp`, the command-line side of the app. The app's executable runs it when
 /// invoked through a symlink named `wtp`, or with `--tui`.
 enum TerminalCommand {
-    static let appIdentifier = "com.whattheport.app"
+    static let appIdentifier = "website.vibed.devservers"
 
     static var isRequested: Bool {
         let name = CommandLine.arguments.first.map { ($0 as NSString).lastPathComponent }
@@ -55,7 +56,7 @@ enum TerminalCommand {
 
     The terminal interface and JSON remain English. App language changes apply immediately.
 
-    Press ? in wtp for keys. Settings are shared with the WhatThePort menu bar app.
+    Press ? in wtp for keys. Settings are shared with the Dev Servers menu bar app.
     """
 
     static var appLanguage: InterfaceLanguage {
@@ -98,10 +99,11 @@ enum TerminalCommand {
         let servers = monitor.servers
         if json {
             printJSON(servers, monitor: monitor)
-        } else if servers.isEmpty {
+        } else if servers.isEmpty && monitor.serviceInventory.isEmpty {
             print("Nothing listening on ports \(monitor.minPort)–\(monitor.maxPort).")
         } else {
-            printTable(servers, monitor: monitor)
+            if !servers.isEmpty { printTable(servers, monitor: monitor) }
+            printInventory(monitor.serviceInventory)
         }
         exit(0)
     }
@@ -185,9 +187,36 @@ enum TerminalCommand {
             }
             return object
         }
-        let data = (try? JSONSerialization.data(withJSONObject: objects, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])) ?? Data("[]".utf8)
-        FileHandle.standardOutput.write(data)
-        print()
+        printInventory(monitor.serviceInventory, json: true, servers: objects)
+        return
+    }
+
+    /// Human-readable helpers, LAN devices and attention. JSON stays a server array
+    /// so existing `wtp list --json` scripts keep working; pass the servers in and
+    /// this returns without printing when `json` is true.
+    private static func printInventory(_ inventory: ServiceInventory, json: Bool = false, servers: [[String: Any]]? = nil) {
+        if json, let servers {
+            let data = (try? JSONSerialization.data(withJSONObject: servers, options: [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes])) ?? Data("[]".utf8)
+            FileHandle.standardOutput.write(data)
+            FileHandle.standardOutput.write(Data("\n".utf8))
+            return
+        }
+        func section(_ title: String, _ lines: [String]) {
+            guard !lines.isEmpty else { return }
+            print("")
+            print(title)
+            lines.forEach { print($0) }
+        }
+        section("Needs attention", inventory.needsAttention.map { "  \($0.title)  \($0.detail)" })
+        section("Helpers", inventory.helpers.map { helper in
+            let ports = (helper.state == .running ? helper.runningPorts : helper.ports).map(String.init).joined(separator: ", ")
+            return "  \(helper.name)  \(ports)  \(helper.state.rawValue)"
+        } + inventory.sidecars.map { "  \($0.name)  \($0.ports.map(String.init).joined(separator: ", "))" })
+        section("On the network", inventory.lanDevices.map { device in
+            let flag = device.firmwareOnly ? "  firmware only" : ""
+            return "  \(device.name)  \(device.openURL ?? device.host)\(flag)"
+        })
+        section("System", inventory.systemRows.map { "  \($0.processName)  \($0.portsLabel)" })
     }
 }
 

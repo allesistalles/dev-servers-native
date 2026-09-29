@@ -50,7 +50,7 @@ if [[ -e "${ARCHIVE}" ]]; then
 fi
 ./build-app.sh --release
 TOOLS=".build/artifacts/sparkle/Sparkle/bin"
-APP=".build/WhatThePort.app"
+APP=".build/Dev Servers.app"
 
 notarize() {
     local SUBMISSION SUBMISSION_ID STATUS

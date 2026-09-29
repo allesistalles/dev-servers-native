@@ -75,7 +75,7 @@ The version comes from `Info.plist`. Increase `CFBundleVersion` (and usually `CF
 | `SPARKLE_PRIVATE_KEY` | Secret | Contents of the exported Sparkle key |
 | `SPARKLE_PUBLIC_KEY` | Variable | Output of `generate_keys -p` |
 
-Then run **Actions → Rebuild and deploy site and app → Run workflow** on `main`. Download `https://whattheport.dev/WhatThePort.dmg` on another Mac and drag the app to Applications: it should open without a Gatekeeper warning and `spctl --assess --verbose=2 /Applications/WhatThePort.app` should report `source=Notarized Developer ID`.
+Then run **Actions → Rebuild and deploy site and app → Run workflow** on `main`. Download `https://whattheport.dev/WhatThePort.dmg` on another Mac and drag the app to Applications: it should open without a Gatekeeper warning and `spctl --assess --verbose=2 "/Applications/Dev Servers.app"` should report `source=Notarized Developer ID`.
 
 Keep the Sparkle key and Developer ID certificate stable. Installed copies only accept updates signed with the Sparkle key they shipped with, and changing both the Sparkle key and signing identity in one release breaks updates.
 
@@ -99,7 +99,7 @@ vercel metrics vercel.request.count -p whattheport --prod -s 30d -g 1d \
 
 ```bash
 python3 scripts/test-configure-updates.py
-codesign --verify --deep --strict .build/WhatThePort.app
+codesign --verify --deep --strict ".build/Dev Servers.app"
 ```
 
 Before publishing broadly, use a separate test feed and test app copies with increasing build numbers. Install the older copy in a writable folder outside the build directory, publish the newer archive and signed feed, and choose **Check for Updates…**. Confirm version detection, installation and relaunch, then confirm a second check reports up to date. Test an unavailable feed and tampered archive too: neither should replace the installed app. Confirm disabling automatic checks persists after relaunch. Production end-to-end verification requires a hosted feed and the release signing key.

@@ -37,8 +37,11 @@ final class ScanEngine: @unchecked Sendable {
     private var argsCache: [pid_t: (start: Date, args: ProcArgs?)] = [:]
 
     func scan(_ config: ScanConfig) -> [Server] {
+        scan(config, sockets: SocketScanner.scan())
+    }
+
+    func scan(_ config: ScanConfig, sockets: SocketScan) -> [Server] {
         let now = Date()
-        let sockets = SocketScanner.scan()
         let processes = ProcessInspector.allProcesses()
 
         var children: [pid_t: [pid_t]] = [:]

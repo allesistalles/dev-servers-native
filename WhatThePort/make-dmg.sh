@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APP="${1:-.build/WhatThePort.app}"
+APP="${1:-.build/Dev Servers.app}"
 DMG="${2:-.build/WhatThePort.dmg}"
 if [[ ! -d "${APP}" ]]; then
     echo "Usage: $0 [app] [output.dmg] (build the app with ./build-app.sh first)" >&2

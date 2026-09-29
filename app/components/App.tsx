@@ -9,6 +9,7 @@ import {
   type Agent,
   type Server,
   SERVERS,
+  DEMO_GROUPS,
   OTHER_APPS,
   OTHER_MEMORY,
   SYSTEM_MEMORY,
@@ -434,6 +435,29 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
             </span>
           </div>
         ))}
+        {!cleaning &&
+          DEMO_GROUPS.map((group) => (
+            <div key={group.title}>
+              <div className={styles.groupLabel}>{l.text(group.title)}</div>
+              {group.rows.map((row) => (
+                <div key={row.id} className={styles.serverRow} data-interactive>
+                  <span className={styles.portLabel}>
+                    <span className={styles.rowPort} style={{ color: row.port ? portColor(row.port) : '#EBEBF566' }}>
+                      {row.port || '—'}
+                    </span>
+                  </span>
+                  <span className={styles.rowMain}>
+                    <span className={styles.rowName}>{row.name}</span>
+                    <span className={styles.rowSub}>
+                      <span className={styles.ellipsis} style={{ color: row.detail === 'Firmware only' || row.detail === 'Stopped' ? AMBER : undefined }}>
+                        {l.text(row.detail)}
+                      </span>
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
       </div>
 
       {!demo.running.length ? (

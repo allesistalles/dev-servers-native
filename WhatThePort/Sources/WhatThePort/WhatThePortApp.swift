@@ -49,7 +49,7 @@ struct WhatThePortApp: App {
         }
         .windowResizability(.contentSize)
 
-        Window(L10n.text("Welcome to WhatThePort"), id: "onboarding") {
+        Window(L10n.text("Welcome to Dev Servers"), id: "onboarding") {
             LocalizedView { OnboardingContainer(monitor: monitor) }
         }
         .windowResizability(.contentSize)
@@ -109,7 +109,7 @@ struct MenuBarLabel: View {
             }
         }()
         Image(nsImage: MenuBarIcon.image(glyph: glyph, count: label))
-            .accessibilityLabel(count == 0 ? L10n.text("WhatThePort, no servers") : L10n.format("WhatThePort, %d servers", count))
+            .accessibilityLabel(count == 0 ? L10n.text("Dev Servers, no servers") : L10n.format("Dev Servers, %d servers", count))
             .task {
                 let openSettings = {
                     NSApp.activate(ignoringOtherApps: true)

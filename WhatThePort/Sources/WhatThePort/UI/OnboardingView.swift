@@ -106,12 +106,12 @@ struct OnboardingView: View {
 
     private var title: String {
         switch step {
-        case .welcome: return "WhatThePort"
+        case .welcome: return "Dev Servers"
         case .leaks: return L10n.text("Stay ahead of leaks")
         case .tools: return L10n.text("Your tools, at a glance.")
         case .vercel: return L10n.text("Vercel previews")
         case .terminal: return L10n.text("WTP TUI")
-        case .usage: return L10n.text("Help shape WhatThePort")
+        case .usage: return L10n.text("Help shape Dev Servers")
         case .done: return L10n.text("You’re set")
         }
     }
@@ -119,8 +119,8 @@ struct OnboardingView: View {
     private var message: String {
         switch step {
         case .welcome: return L10n.text("Every dev server on your Mac, in the menu bar. What it is, what branch it’s on, and what it’s costing you.")
-        case .leaks: return L10n.text("WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac.")
-        case .tools: return L10n.text("WhatThePort reads local session files and process info to put your servers in context.")
+        case .leaks: return L10n.text("Dev Servers warns you when a server starts eating memory. Nothing about your servers leaves your Mac.")
+        case .tools: return L10n.text("Dev Servers reads local session files and process info to put your servers in context.")
         case .vercel: return L10n.text("See the preview deployment for whatever branch each server is running. Optional.")
         case .terminal: return L10n.text("Type wtp in any terminal to browse, open and stop your servers, with the same details and Clean up. Optional.")
         case .usage: return L10n.text("Share which features you use, once a day. Nothing about your servers, projects or Mac is included.")
@@ -263,7 +263,7 @@ struct OnboardingView: View {
         case .installed: return L10n.text("Ready in new terminal windows")
         case .notInstalled: return L10n.format("Adds %@", CommandLineTool.linkPath)
         case .other: return L10n.format("%@ is already something else", CommandLineTool.linkPath)
-        case .unavailable: return L10n.text("Move WhatThePort to Applications first")
+        case .unavailable: return L10n.text("Move Dev Servers to Applications first")
         }
     }
 
@@ -307,7 +307,7 @@ struct OnboardingView: View {
         case .usage where usageOnly:
             Button(L10n.text("Done")) { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         case .done:
-            Button(L10n.text("Open WhatThePort")) { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
+            Button(L10n.text("Open Dev Servers")) { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         default:
             Button(L10n.text("Back")) { go(OnboardingStep(rawValue: step.rawValue - 1) ?? .welcome) }.buttonStyle(PillButtonStyle())
             Button(L10n.text("Continue")) { go(OnboardingStep(rawValue: step.rawValue + 1) ?? .done) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)

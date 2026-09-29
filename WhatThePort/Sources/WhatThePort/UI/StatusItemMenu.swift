@@ -20,7 +20,7 @@ enum StatusItemMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        menu.addItem(ActionItem(L10n.text("Open WhatThePort")) { StatusItemOpener.open() })
+        menu.addItem(ActionItem(L10n.text("Open Dev Servers")) { StatusItemOpener.open() })
 
         let browser = NSMenuItem(title: L10n.text("Open in Browser"), action: nil, keyEquivalent: "")
         let servers = NSMenu()
@@ -49,7 +49,7 @@ enum StatusItemMenu {
         menu.addItem(feedback)
 
         menu.addItem(.separator())
-        let quit = ActionItem(L10n.text("Quit WhatThePort")) { NSApp.terminate(nil) }
+        let quit = ActionItem(L10n.text("Quit Dev Servers")) { NSApp.terminate(nil) }
         quit.keyEquivalent = "q"
         menu.addItem(quit)
 

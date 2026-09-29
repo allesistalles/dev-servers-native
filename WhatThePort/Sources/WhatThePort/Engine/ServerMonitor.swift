@@ -1,4 +1,6 @@
 import Combine
+import Darwin
+import DevServersCore
 import Foundation
 
 @MainActor
@@ -18,6 +20,7 @@ final class ServerMonitor: ObservableObject {
     @Published private(set) var systemCPU: Double?
     /// Memory by app for everything that isn't a dev server, largest first.
     @Published private(set) var otherApps: [AppMemory] = []
+    @Published private(set) var serviceInventory = ServiceInventory.empty
     @Published var allowlist: Set<String> = ServerMonitor.defaultAllowlist
     /// Set from outside the popover (e.g. a notification's Details button).
     @Published var pendingRoute: PopoverRoute?
@@ -48,7 +51,12 @@ final class ServerMonitor: ObservableObject {
     private let engine = ScanEngine()
     private let appUsage = AppUsageScanner()
     private let cpuSampler = SystemCPUSampler()
-    private let queue = DispatchQueue(label: "com.whattheport.scan", qos: .utility)
+    private let bonjour = BonjourBrowser()
+    private var probeCache: [ProbeResult] = []
+    private var probeAt = Date.distantPast
+    private var nameLookup: [String: Bool] = [:]
+    private var nameLookupAt: [String: Date] = [:]
+    private let queue = DispatchQueue(label: "website.vibed.devservers.scan", qos: .utility)
     private var timer: Timer?
     private var timerInterval: TimeInterval = 0
     private var isScanning = false
@@ -92,6 +100,7 @@ final class ServerMonitor: ObservableObject {
 
     func start() {
         guard timer == nil else { return }
+        bonjour.start()
         scan()
         scheduleTimer()
         // Settings changes (scan interval, thresholds, integrations) apply on the next scan.
@@ -119,37 +128,61 @@ final class ServerMonitor: ObservableObject {
         guard !isScanning else { return }
         isScanning = true
         let config = scanConfig
+        let services = bonjour.snapshot()
+        let cache = bonjour.ipv4Cache()
+        let lookups = nameLookup
+        let lookupAt = nameLookupAt
+        let probes = probeCache
+        let refreshProbes = Date().timeIntervalSince(probeAt) > 12 || probeCache.isEmpty
         queue.async { [engine, appUsage, cpuSampler] in
-            let result = engine.scan(config)
-            let system = ProcessInspector.systemMemory()
-            let cpu = cpuSampler.sample()
-            let apps = appUsage.scan(excluding: Set(result.flatMap { $0.processStarts.keys }))
+            let pass = Self.performScan(
+                engine: engine, appUsage: appUsage, cpuSampler: cpuSampler, config: config,
+                services: services, ipv4Cache: cache, lookups: lookups, lookupAt: lookupAt,
+                probes: probes, refreshProbes: refreshProbes
+            )
             Task { @MainActor in
-                self.servers = result
-                self.systemMemory = system
-                if let cpu { self.systemCPU = cpu }
-                self.otherApps = apps
-                self.hasScanned = true
-                self.isScanning = false
-                if self.handlesAlerts {
-                    AlertCenter.shared.evaluate(result, threshold: self.alertThreshold)
-                    self.handleCleanUp()
-                }
-                // Keep previews and PRs roughly fresh in the background (no-op when disabled).
-                result.forEach { self.github.refresh($0, maxAge: 300) }
+                self.apply(pass)
             }
         }
     }
 
-    /// Runs a scan synchronously. Used by snapshot mode.
+    /// Runs a scan synchronously. Used by snapshot mode and `wtp list`.
     func scanNow() {
+        bonjour.start()
+        if bonjour.snapshot().isEmpty { usleep(1_000_000) }
         let config = scanConfig
-        servers = queue.sync { engine.scan(config) }
-        systemMemory = ProcessInspector.systemMemory()
-        if let cpu = queue.sync(execute: { cpuSampler.sample() }) { systemCPU = cpu }
-        let excluded = Set(servers.flatMap { $0.processStarts.keys })
-        otherApps = queue.sync { appUsage.scan(excluding: excluded) }
+        let services = bonjour.snapshot()
+        let cache = bonjour.ipv4Cache()
+        let lookups = nameLookup
+        let lookupAt = nameLookupAt
+        let probes = probeCache
+        let pass = queue.sync {
+            Self.performScan(
+                engine: engine, appUsage: appUsage, cpuSampler: cpuSampler, config: config,
+                services: services, ipv4Cache: cache, lookups: lookups, lookupAt: lookupAt,
+                probes: probes, refreshProbes: true
+            )
+        }
+        apply(pass)
+    }
+
+    private func apply(_ pass: InventoryPass) {
+        servers = pass.servers
+        serviceInventory = pass.inventory
+        probeCache = pass.probes
+        if pass.refreshedProbes { probeAt = Date() }
+        nameLookup = pass.lookups
+        nameLookupAt = pass.lookupAt
+        systemMemory = pass.system
+        if let cpu = pass.cpu { systemCPU = cpu }
+        otherApps = pass.apps
         hasScanned = true
+        isScanning = false
+        if handlesAlerts {
+            AlertCenter.shared.evaluate(pass.servers, threshold: alertThreshold)
+            handleCleanUp()
+        }
+        pass.servers.forEach { github.refresh($0, maxAge: 300) }
     }
 
     // MARK: - Derived
@@ -225,6 +258,34 @@ final class ServerMonitor: ObservableObject {
         ProcessControl.restart(server) { [weak self] _ in self?.scan() }
     }
 
+    func startHelper(_ helper: HelperRow) {
+        runLaunchPlan(helper.startPlan(uid: Int(getuid())), fallbackPIDs: [])
+    }
+
+    func stopHelper(_ helper: HelperRow) {
+        runLaunchPlan(helper.stopPlan(uid: Int(getuid())), fallbackPIDs: helper.listenerPIDs)
+    }
+
+    func restartHelper(_ helper: HelperRow) {
+        runLaunchPlan(helper.restartPlan(uid: Int(getuid())), fallbackPIDs: helper.listenerPIDs)
+    }
+
+    func stopSidecar(_ sidecar: SidecarRow) {
+        runLaunchPlan(sidecar.stopPlan(uid: Int(getuid())), fallbackPIDs: sidecar.listenerPIDs)
+    }
+
+    private func runLaunchPlan(_ plan: LaunchControlPlan?, fallbackPIDs: [Int]) {
+        let uidPlan = plan
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let ok = uidPlan.map { LaunchAgentController.run($0) } ?? false
+            if !ok { LaunchAgentController.signal(fallbackPIDs) }
+            DispatchQueue.main.async {
+                self?.scan()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self?.scan() }
+            }
+        }
+    }
+
     // MARK: - Ports and processes
 
     func setPortRange(min: Int, max: Int) {
@@ -253,5 +314,85 @@ final class ServerMonitor: ObservableObject {
     private func saveAllowlist() {
         defaults.set(Array(allowlist), forKey: "allowlist")
         scan()
+    }
+
+    private struct InventoryPass {
+        var servers: [Server]
+        var inventory: ServiceInventory
+        var probes: [ProbeResult]
+        var refreshedProbes: Bool
+        var lookups: [String: Bool]
+        var lookupAt: [String: Date]
+        var system: SystemMemory?
+        var cpu: Double?
+        var apps: [AppMemory]
+    }
+
+    private static func performScan(
+        engine: ScanEngine,
+        appUsage: AppUsageScanner,
+        cpuSampler: SystemCPUSampler,
+        config: ScanConfig,
+        services: [BonjourService],
+        ipv4Cache: [String: String],
+        lookups: [String: Bool],
+        lookupAt: [String: Date],
+        probes: [ProbeResult],
+        refreshProbes: Bool
+    ) -> InventoryPass {
+        let sockets = SocketScanner.scan()
+        let result = engine.scan(config, sockets: sockets)
+        let agents = LaunchAgentController.load()
+
+        var nextLookups = lookups
+        var nextLookupAt = lookupAt
+        let now = Date()
+        var budget = 6
+        for host in PortalProbe.hostnames(bonjour: services) {
+            let stale = nextLookupAt[host].map { now.timeIntervalSince($0) > 30 } ?? true
+            guard stale, budget > 0 else { continue }
+            budget -= 1
+            nextLookups[host] = NameResolver.resolves(host)
+            nextLookupAt[host] = now
+        }
+
+        var nextProbes = probes
+        if refreshProbes {
+            nextProbes = PortalProber.probe(PortalProbe.targets(bonjour: services, ipv4Cache: ipv4Cache))
+        }
+        let listeners = listeners(from: sockets, servers: result)
+        let inventory = InventoryBuilder.build(InventoryInput(
+            listeners: listeners,
+            launchAgents: agents,
+            bonjour: services,
+            probes: nextProbes,
+            nameLookup: nextLookups,
+            ipv4Cache: ipv4Cache
+        ))
+        let visible = result.filter { !inventory.hiddenPorts.contains($0.port) }
+        return InventoryPass(
+            servers: visible,
+            inventory: inventory,
+            probes: nextProbes,
+            refreshedProbes: refreshProbes,
+            lookups: nextLookups,
+            lookupAt: nextLookupAt,
+            system: ProcessInspector.systemMemory(),
+            cpu: cpuSampler.sample(),
+            apps: appUsage.scan(excluding: Set(visible.flatMap { $0.processStarts.keys }))
+        )
+    }
+
+    private static func listeners(from sockets: SocketScan, servers: [Server]) -> [Listener] {
+        sockets.listening.map { socket in
+            let server = servers.first { $0.port == socket.port }
+            return Listener(
+                port: socket.port,
+                pid: Int(socket.pid),
+                processName: socket.command,
+                command: server?.command ?? socket.command,
+                cwd: server?.cwd
+            )
+        }
     }
 }

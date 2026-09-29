@@ -3,11 +3,11 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.whattheport.app</string>
+    <string>website.vibed.devservers</string>
     <key>CFBundleName</key>
-    <string>WhatThePort</string>
+    <string>Dev Servers</string>
     <key>CFBundleDisplayName</key>
-    <string>WhatThePort</string>
+    <string>Dev Servers</string>
     <key>CFBundleExecutable</key>
     <string>WhatThePort</string>
     <key>CFBundlePackageType</key>

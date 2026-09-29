@@ -1,4 +1,8 @@
-# WhatThePort
+# Dev Servers
+
+Native macOS menu-bar app for local dev servers, LaunchAgents and LAN devices. This is a fork of [WhatThePort](https://github.com/tomjohndesign/what-the-port) by [Tomjohn](https://tomjohn.design), MIT. It keeps WhatThePort’s scanner, leak alerts, Clean up, agent sessions and `wtp`, and adds the helpers, noise rules and LAN discovery needed to replace the Electron [Dev Servers](https://github.com/allesistalles/dev-servers) app.
+
+The app’s display name is **Dev Servers**. Bundle id: `website.vibed.devservers`. The website download stays [`/WhatThePort.dmg`](https://whattheport.dev/WhatThePort.dmg).
 
 **Every dev server on your Mac, in the menu bar.**
 
@@ -78,7 +82,7 @@ Can't see the dot grid? The menu bar hides icons that don't fit: click » at its
 
 ```bash
 sudo mkdir -p /usr/local/bin
-sudo ln -sf /Applications/WhatThePort.app/Contents/MacOS/WhatThePort /usr/local/bin/wtp
+sudo ln -sf "/Applications/Dev Servers.app/Contents/MacOS/WhatThePort" /usr/local/bin/wtp
 ```
 
 - `↑` `↓` to select, `⏎` for details, `space` for an Actions menu (open, restart, stop, resume the agent session, editor, copy), `c` for Clean up, `?` for every key
@@ -123,28 +127,69 @@ WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's
 There's no account and no analytics SDK. Everything the app shows comes from your Mac and stays there. It only goes online to:
 
 - **Check for updates** - Sparkle fetches the update feed from whattheport.dev about once a day.
-- **Share anonymous usage** - Once a day, the app requests `whattheport.dev/usage/<feature>` for each feature you used, such as `/usage/stop` or `/usage/clean-up`, plus `/usage/active` to say it ran. That's the whole report: no body, cookies or identifier, and nothing about your servers, projects, files or Mac. The app's user agent is just `WhatThePort/<version>`. The site only counts these requests. Like any web request, the host (Vercel) sees the connection's IP address in its standard logs; the counts don't use it. Onboarding asks before anything is sent, and you can turn it off in **Settings → General → Privacy**. See [`Usage.swift`](WhatThePort/Sources/WhatThePort/Engine/Usage.swift) for the full list.
+- **Share anonymous usage** - Once a day, the app requests `whattheport.dev/usage/<feature>` for each feature you used, such as `/usage/stop` or `/usage/clean-up`, plus `/usage/active` to say it ran. That's the whole report: no body, cookies or identifier, and nothing about your servers, projects, files or Mac. The app's user agent is `DevServers/<version>`. The site only counts these requests. Like any web request, the host (Vercel) sees the connection's IP address in its standard logs; the counts don't use it. Onboarding asks before anything is sent, and you can turn it off in **Settings → General → Privacy**. See [`Usage.swift`](WhatThePort/Sources/WhatThePort/Engine/Usage.swift) for the full list.
 - **Look up previews and pull requests (off by default)** - Uses the GitHub CLI you're already signed in to.
 
 The website uses cookieless [Vercel Web Analytics](https://vercel.com/docs/analytics) to count visits and download clicks.
 
-## Building
+## Build and install on a Mac
+
+This VM cannot compile the AppKit/SwiftUI app. Build it on a Mac with Xcode or a Swift 5.9+ toolchain (the package was written for Swift 5.9; Swift 6.2 is fine). From the repo root:
 
 ```bash
 cd WhatThePort
-swift build
+swift build -c release
+./build-app.sh
+cp -R ".build/Dev Servers.app" /Applications/
+codesign --force --deep --sign - "/Applications/Dev Servers.app"
+open "/Applications/Dev Servers.app"
 ```
 
-To build the app bundle:
+`./build-app.sh` already ad-hoc signs the bundle (`codesign --sign -`). The copy into `/Applications` needs a second ad-hoc signature because copying can break the seal. The executable inside the bundle is still named `WhatThePort` (the Swift package target). Finder and the menu bar show **Dev Servers**.
+
+The same build with Xcode:
 
 ```bash
+cd WhatThePort
+xcodebuild -scheme WhatThePort -destination 'platform=macOS' -configuration Release build
 ./build-app.sh
-open .build/WhatThePort.app
+cp -R ".build/Dev Servers.app" /Applications/
+codesign --force --deep --sign - "/Applications/Dev Servers.app"
 ```
+
+`xcodebuild` resolves the package. `./build-app.sh` is still what produces `Dev Servers.app` with Sparkle and the resources in the right places. Quit any old WhatThePort first: this fork’s bundle id is `website.vibed.devservers`, so macOS treats it as a different app.
+
+Check the classification logic without a Mac (Linux or Mac):
+
+```bash
+cd WhatThePort
+swift test --filter DevServersCoreTests
+```
+
+On Linux that command rewrites `WhatThePort/Package.resolved`, because `Package.swift` omits Sparkle and FlickerDot there. Restore the lockfile afterwards (`git checkout -- WhatThePort/Package.resolved`) so a Mac build keeps the pinned Sparkle 2.10.0 and FlickerDot 0.2.0 revisions.
+
+### What could not be compiled here
+
+This environment is Linux. `swift test --filter DevServersCoreTests` builds and runs `DevServersCore` only. The menu-bar target does not build here, so these files were not type-checked by a compiler:
+
+- `WhatThePort/Sources/WhatThePort/` (SwiftUI, AppKit, Sparkle, FlickerDot), including the new `BonjourBrowser.swift`, `PortalProber.swift`, `LaunchAgentController.swift`, `ServiceSections.swift`, and the `ServerMonitor` wiring
+- `NWBrowser` / `NetService` resolution, `launchctl`, and the popover layout
+
+`Package.swift` omits that target on Linux so the core tests can run. On a Mac the whole package builds.
+
+### Behavior notes
+
+The Electron repo was not readable from the build environment, so the rules below follow the requested behavior and are covered by `DevServersCoreTests`. A few choices may not match that app line for line:
+
+- A known helper is listed when one of its ports is listening, a matching LaunchAgent exists, or it is the LED Round Dial companion. The companion is “Missing companion” until `:5177` is the dial’s own process. A Vite server on `:5177` in another folder stays a normal dev server.
+- Every other plist in `~/Library/LaunchAgents` is a helper. Stopped ones are also in Needs attention. Sidecars (Claude/OpenCode forwarders, P1S mDNS, P1S menu bar) are shown only while running, under their role name, and never in Needs attention.
+- Spotify and `rapportd` become one row per process name, including `Spotify Helper` as its own row. Those rows are not stoppable.
+- Helper Stop/Start/Restart use `launchctl` when a plist is known. With no plist, Stop signals the listening pids and Start is disabled.
+- `wtp list` prints the new groups after the server table. `wtp list --json` is still the server array. The terminal UI’s keyboard list is still local dev servers; helpers and LAN are in the popover and in `wtp list`.
 
 For updater-enabled releases, see [Automatic updates and release setup](WhatThePort/UPDATES.md). The release script packages the app as a notarized disk image and generates a signed update feed for the website.
 
-To package a local build as the download's disk image, run `./make-dmg.sh` after `./build-app.sh`.
+To package a local build as the download's disk image, run `./make-dmg.sh` after `./build-app.sh`. The disk image file stays `WhatThePort.dmg`. The app inside it is `Dev Servers.app`.
 
 ## Automatic deployment
 
@@ -195,7 +240,7 @@ notarizes the app, and publishes a signed Sparkle feed under `/updates/`. See
 
 ## About
 
-Made by [Tomjohn](https://tomjohn.design). Explore the [interactive demo](https://whattheport.dev), read the [guides](https://whattheport.dev/guides) to ports, dev servers and coding agents on macOS, or browse the source to see how it works. Agents can read the site as Markdown from [`/llms.txt`](https://whattheport.dev/llms.txt). If WhatThePort saves you time, [buy me a coffee](https://whattheport.dev/tip).
+Dev Servers is based on [WhatThePort](https://github.com/tomjohndesign/what-the-port) by [Tomjohn](https://tomjohn.design), MIT. This fork is [allesistalles/dev-servers-native](https://github.com/allesistalles/dev-servers-native). Explore the [interactive demo](https://whattheport.dev), read the [guides](https://whattheport.dev/guides), or browse the source. Agents can read the site as Markdown from [`/llms.txt`](https://whattheport.dev/llms.txt). If the app saves you time, [buy Tomjohn a coffee](https://whattheport.dev/tip).
 
 ## License
 

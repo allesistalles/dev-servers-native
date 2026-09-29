@@ -71,7 +71,7 @@ enum Usage {
         configuration.urlCache = nil
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev"
         // Replaces the default agent, which names the Darwin and CFNetwork versions.
-        configuration.httpAdditionalHeaders = ["User-Agent": "WhatThePort/\(version)"]
+        configuration.httpAdditionalHeaders = ["User-Agent": "DevServers/\(version)"]
         return URLSession(configuration: configuration)
     }()
 

@@ -54,7 +54,7 @@ jobs:
         if: steps.mode.outputs.mode == 'adhoc'
         run: |
           ./WhatThePort/build-app.sh
-          codesign --verify --strict WhatThePort/.build/WhatThePort.app
+          codesign --verify --strict "WhatThePort/.build/Dev Servers.app"
           ./WhatThePort/make-dmg.sh
           mkdir -p dist
           cp WhatThePort/.build/WhatThePort.dmg dist/WhatThePort.dmg
@@ -121,7 +121,7 @@ jobs:
           hdiutil verify dist/WhatThePort.dmg
           mount="$(mktemp -d)"
           hdiutil attach -nobrowse -readonly -mountpoint "$mount" dist/WhatThePort.dmg
-          codesign --verify --strict "$mount/WhatThePort.app"
+          codesign --verify --strict "$mount/Dev Servers.app"
           test "$(readlink "$mount/Applications")" = /Applications
           hdiutil detach "$mount"
 

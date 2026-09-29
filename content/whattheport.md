@@ -22,6 +22,12 @@
 - **Global shortcut.** ⌥⌘P opens the popover.
 - **Interface language.** English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian. Select a language on the first onboarding screen or in Settings → General → Language; changes apply immediately. System default follows the Mac’s preferred languages, with English fallback. Hebrew uses right-to-left layout. `wtp language` reads the shared app preference; `wtp language ja` sets it; `wtp language system` restores automatic selection. The TUI, command help and JSON remain English; user data and commands stay unchanged. The first onboarding screen previews sample Servers rows in the chosen language. The site’s Languages section shows the Servers popover demo in each language, using the app’s own translations.
 - **Native.** Written in Swift. No Electron, no Dock icon. Light and dark mode.
+- **Helpers.** Known local helpers stay in the list even when they are stopped: Blackberry (:8888, :8899, :8900), DialDash (:7878), Droppic (:8787), P1S bridge (:8765), Claude-mem (:37777) and the LED Round Dial companion (:5177). The popover also lists plists in `~/Library/LaunchAgents`. Stop runs `launchctl bootout` so launchd does not respawn the job. Start runs `launchctl bootstrap` and `kickstart`. Restart does both.
+- **Needs attention.** Stopped helpers, the missing LED Round Dial companion, and firmware-only OTA/ESPHome devices. A row can sit in this group and in Helpers or On the network at the same time.
+- **On the network.** Bonjour browse for `_http._tcp`, `_https._tcp`, `_esphomelib._tcp`, `_arduino._tcp`, `_home-assistant._tcp` and `_hap._tcp`. Seed host Monster Settings (`monster.local`, `192.168.0.148`) still opens when `.local` lookup fails, using the IPv4 from Bonjour resolution or that seed address. Portal ports are probed for an openable web UI. Firmware-only devices are shown and flagged.
+- **Noise.** Claude and OpenCode forwarders, and the P1S mDNS and menu-bar sidecars, are named by role and left out of Stopped and Needs attention. Spotify and rapportd collapse to one row per process, with the ports listed.
+
+The menu-bar app in this fork is **Dev Servers** (bundle id `website.vibed.devservers`). It is based on WhatThePort by Tomjohn, MIT. Source: https://github.com/allesistalles/dev-servers-native and https://github.com/tomjohndesign/what-the-port.
 
 ## Install
 

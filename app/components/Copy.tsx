@@ -74,8 +74,8 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
         <div className={styles.copy}>
           <h1 className={styles.headline}>Every dev server on your Mac, in the menu bar.</h1>
           <p className={styles.body}>
-            What it is, what branch it’s on, which agent started it, and what it’s costing you. Stop the ones you forgot
-            about in one click.
+            What it is, what branch it’s on, which agent started it, and what it’s costing you. Helpers, LAN devices and
+            anything that needs attention sit in the same list. Stop the ones you forgot about in one click.
           </p>
           <Cta stars={stars} location="hero" />
         </div>

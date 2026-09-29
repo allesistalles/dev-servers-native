@@ -28,12 +28,12 @@ struct ServersView: View {
         VStack(spacing: 0) {
             summary
             SectionDivider()
-            if visibleServers.isEmpty {
+            if listIsEmpty {
                 emptyState
-            } else if visibleServers.count > maxVisibleRows {
-                ScrollView { rows }.frame(height: CGFloat(maxVisibleRows) * 52 + 12)
+            } else if rowCount > maxVisibleRows {
+                ScrollView { listBody }.frame(height: CGFloat(maxVisibleRows) * 52 + 12)
             } else {
-                rows
+                listBody
             }
             SectionDivider()
             footer
@@ -43,6 +43,39 @@ struct ServersView: View {
     /// Protected processes (databases) can't be stopped from Clean up, so hide them there.
     private var visibleServers: [Server] {
         isCleaning ? monitor.servers.filter { !$0.isProtected } : monitor.servers
+    }
+
+    private var listIsEmpty: Bool {
+        if isCleaning { return visibleServers.isEmpty }
+        return visibleServers.isEmpty && monitor.serviceInventory.isEmpty
+    }
+
+    private var rowCount: Int {
+        if isCleaning { return visibleServers.count }
+        let inventory = monitor.serviceInventory
+        return visibleServers.count
+            + inventory.needsAttention.count
+            + inventory.helpers.count
+            + inventory.sidecars.count
+            + inventory.lanDevices.count
+            + inventory.systemRows.count
+    }
+
+    @ViewBuilder private var listBody: some View {
+        VStack(spacing: 0) {
+            if !isCleaning {
+                ServiceSections(monitor: monitor, showsAttention: true, showsRest: false)
+            }
+            if !visibleServers.isEmpty {
+                if !isCleaning && monitor.serviceInventory.showsSectionHeaders {
+                    GroupLabel(title: L10n.text("Servers"))
+                }
+                rows
+            }
+            if !isCleaning {
+                ServiceSections(monitor: monitor, showsAttention: false, showsRest: true)
+            }
+        }
     }
 
     private var selectedServers: [Server] {

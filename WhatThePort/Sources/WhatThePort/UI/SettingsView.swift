@@ -168,11 +168,11 @@ private struct CommandLineToolRow: View {
         switch state {
         case .installed: return L10n.text("Type wtp in any terminal to see and stop your servers")
         case .notInstalled: return L10n.text("Adds wtp to see and stop your servers from any terminal")
-        case .unavailable: return L10n.text("Move WhatThePort to Applications to add the wtp command")
+        case .unavailable: return L10n.text("Move Dev Servers to Applications to add the wtp command")
         case .other(let path):
             return FileManager.default.fileExists(atPath: path)
                 ? L10n.format("%@ is another program: %@", CommandLineTool.linkPath, (path as NSString).abbreviatingWithTildeInPath)
-                : L10n.text("wtp points to a copy of WhatThePort that’s no longer there")
+                : L10n.text("wtp points to a copy of Dev Servers that’s no longer there")
         }
     }
 
@@ -401,10 +401,9 @@ enum ToolDetection {
 private struct AboutPane: View {
     @ObservedObject private var updater = AppUpdater.shared
     private let links: [(label: String, value: String, url: String)] = [
+        ("Upstream", "tomjohndesign/what-the-port", "https://github.com/tomjohndesign/what-the-port"),
         (L10n.text("Website"), "tomjohn.design", "https://www.tomjohn.design"),
-        ("LinkedIn", "in/tomjohndesign", "https://www.linkedin.com/in/tomjohndesign"),
-        ("X", "@tomjohndesign", "https://x.com/tomjohndesign"),
-        ("GitHub", "tomjohndesign/what-the-port", "https://github.com/tomjohndesign/what-the-port"),
+        ("This fork", "allesistalles/dev-servers-native", "https://github.com/allesistalles/dev-servers-native"),
     ]
 
     private var version: String {
@@ -420,7 +419,7 @@ private struct AboutPane: View {
                 VStack(spacing: 12) {
                     AppIconView(size: 88)
                     VStack(spacing: 4) {
-                        Text("WhatThePort").font(Theme.displaySans)
+                        Text("Dev Servers").font(Theme.displaySans)
                         Text(version).font(Theme.monoCaption).foregroundStyle(.secondary)
                     }
                     Text(L10n.text("Every dev server on your Mac, in the menu bar.")).foregroundStyle(.secondary)
@@ -469,11 +468,11 @@ private struct AboutPane: View {
             } header: {
                 Text(L10n.text("Support"))
             } footer: {
-                Text(L10n.text("WhatThePort is free and open source. If it saves you time, you can leave a tip of any amount through Stripe."))
+                Text(L10n.text("Dev Servers is free and open source. If it saves you time, you can leave a tip of any amount through Stripe."))
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
-            Section(L10n.text("Made by Tomjohn")) {
+            Section(L10n.text("Based on WhatThePort")) {
                 ForEach(links, id: \.label) { link in
                     ExternalLinkRow(label: L10n.text(link.label), value: link.value, url: URL(string: link.url)!)
                 }
@@ -486,7 +485,7 @@ private struct AboutPane: View {
 enum FeedbackLink {
     enum Kind { case bug, feature }
 
-    static let repository = "https://github.com/tomjohndesign/what-the-port"
+    static let repository = "https://github.com/allesistalles/dev-servers-native"
 
     /// Redirects to the tip page (TIP_URL on the site), so it can change without an app update.
     static let tip = URL(string: "https://whattheport.dev/tip")!
@@ -513,7 +512,7 @@ enum FeedbackLink {
         case .feature:
             label = "enhancement"
             body = """
-            **What would you like WhatThePort to do?**
+            **What would you like Dev Servers to do?**
 
 
             **Why would it help?**
@@ -539,7 +538,7 @@ enum FeedbackLink {
         #else
         let chip = "Intel"
         #endif
-        return "WhatThePort \(short) (\(build)) · macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion) · \(chip)"
+        return "Dev Servers \(short) (\(build)) · macOS \(os.majorVersion).\(os.minorVersion).\(os.patchVersion) · \(chip)"
     }
 }
 

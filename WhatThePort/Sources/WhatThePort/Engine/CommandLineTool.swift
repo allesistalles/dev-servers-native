@@ -38,7 +38,7 @@ enum CommandLineTool {
     /// /usr/local/bin isn't writable. Returns an error message, or nil on
     /// success or when the password prompt is cancelled.
     static func install() -> String? {
-        guard let target = executablePath else { return L10n.text("Move WhatThePort to Applications first.") }
+        guard let target = executablePath else { return L10n.text("Move Dev Servers to Applications first.") }
         let fileManager = FileManager.default
         let directory = (linkPath as NSString).deletingLastPathComponent
         if fileManager.isWritableFile(atPath: directory) {
