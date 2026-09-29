@@ -1,15 +1,6 @@
 import styles from './landing.module.css'
 import { LanguageHeadline } from './LanguageHeadline'
-import {
-  AppleIcon,
-  ClaudeIcon,
-  CodexIcon,
-  Colon,
-  type ColonState,
-  ConductorIcon,
-  GitHubIcon,
-  VercelIcon,
-} from './icons'
+import { AppleIcon, Colon, type ColonState, GitHubIcon } from './icons'
 import { track } from '@vercel/analytics'
 import { portColor } from './servers'
 import { DOWNLOAD_URL, GITHUB_URL } from './sections'
@@ -47,18 +38,10 @@ export function Cta({ stars, location }: { stars: number | null; location: strin
   )
 }
 
-const TOOLS = [
-  { name: 'Claude Code', detail: 'claude --resume', icon: <ClaudeIcon color="#F5F5F7" size={14} width={1.3} /> },
-  { name: 'Codex', detail: 'codex resume', icon: <CodexIcon color="#F5F5F7" size={14} width={1.1} /> },
-  { name: 'Conductor', detail: 'workspace name', icon: <ConductorIcon /> },
-  { name: 'Vercel', detail: 'preview per branch', icon: <VercelIcon /> },
-]
-
-const COMMANDS = [
-  { name: 'wtp', detail: 'Browse, open and stop servers' },
-  { name: 'wtp list', detail: 'Print them and exit' },
-  { name: 'wtp list --json', detail: 'For scripts and agents' },
-  { name: 'wtp language de', detail: 'Set the Mac app’s language' },
+const BOARD = [
+  { name: 'Open', detail: 'Browser, when the card has a URL' },
+  { name: 'Start', detail: 'Stopped helpers and LaunchAgents' },
+  { name: 'Kill', detail: 'bootout, then the process' },
 ]
 
 const FACTS = [
@@ -74,8 +57,8 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
         <div className={styles.copy}>
           <h1 className={styles.headline}>Every dev server on your Mac, in the menu bar.</h1>
           <p className={styles.body}>
-            What it is, what branch it’s on, which agent started it, and what it’s costing you. Stop the ones you forgot
-            about in one click.
+            Helpers, local listeners, and devices on your LAN, on one board. A page that answers, even with a 404, has
+            Open. No HTTP response is firmware-only, one card per host.
           </p>
           <Cta stars={stars} location="hero" />
         </div>
@@ -83,59 +66,51 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
     case 1:
       return (
         <div className={styles.copy}>
-          <PortLabel port="3000" colon="on" label="Sessions" />
-          <h2 className={styles.headline}>Knows which agent started it.</h2>
+          <PortLabel port="80" colon="on" label="LAN" />
+          <h2 className={styles.headline}>Portals on the network get Open.</h2>
           <p className={styles.body}>
-            Servers launched by Claude Code, Codex or Conductor link back to the session that started them. Pick up the
-            conversation, check the branch, or open the Vercel preview for the same commit.
+            Every host advertised as HTTP, Arduino or ESPHome is probed on its port and on port 80. Any HTTP response,
+            including 401, 403 and 404, is a live portal. Home Assistant, Monster Settings and the dials that serve a page
+            show up as one card each.
           </p>
-          <ul className={styles.list}>
-            {TOOLS.map((tool) => (
-              <li key={tool.name} className={styles.listRow}>
-                <span className={styles.toolIcon}>{tool.icon}</span>
-                <span className={styles.listName}>{tool.name}</span>
-                <span className={styles.listDetail}>{tool.detail}</span>
-              </li>
-            ))}
-          </ul>
         </div>
       )
     case 2:
       return (
         <div className={styles.copy}>
-          <PortLabel port="6006" colon="amber" label="Leaks" />
-          <h2 className={styles.headline}>Notices before your fans do.</h2>
+          <PortLabel port="3232" colon="idle" label="OTA" />
+          <h2 className={styles.headline}>No page means firmware only.</h2>
           <p className={styles.body}>
-            When a server passes 2 GB or grows 500 MB in ten minutes, the menu bar turns amber and you get one quiet
-            notification. Crashed, hung and failed preview builds get flagged too.
+            bedside-dial, led-round-dial, printstatus and the other ESP32s that do not answer HTTP stay on the board
+            without Open. They are one card per host, not a second row for each Bonjour type.
           </p>
         </div>
       )
     case 3:
       return (
         <div className={styles.copy}>
-          <PortLabel port="8000" colon="idle" label="Clean up" />
-          <h2 className={styles.headline}>Stops the ones you forgot.</h2>
+          <PortLabel port="8787" colon="on" label="Helpers" />
+          <h2 className={styles.headline}>Start and kill stay on the card.</h2>
           <p className={styles.body}>
-            Clean up selects servers from deleted worktrees or idle for hours. Tick the ones to go and WhatThePort stops
-            each whole process tree. Postgres and Redis are protected by default.
+            Known Mac helpers that are down show Start. A running helper can be restarted or killed. The popover does not
+            open a session, an editor, or a terminal.
           </p>
         </div>
       )
     case 4:
       return (
         <div className={styles.copy}>
-          <PortLabel port="5173" colon="on" label="Terminal" />
-          <h2 className={styles.headline}>WTP TUI</h2>
+          <PortLabel port="5177" colon="on" label="Board" />
+          <h2 className={styles.headline}>Open, start and stop, on the card.</h2>
           <p className={styles.body}>
-            Type <span className={styles.inlineMono}>wtp</span> for the same servers, details and Clean up in your
-            terminal, in its own colours. Click the window and try it: arrow keys to move, space for actions, q to quit.
+            Overview, All, Local, LAN, Stopped and System. Open, Start, Restart and Kill stay on every card you can
+            control. Firmware-only devices say so, and have no Open button.
           </p>
           <ul className={styles.list}>
-            {COMMANDS.map((command) => (
-              <li key={command.name} className={styles.listRow}>
-                <span className={`${styles.listName} ${styles.inlineMono}`}>{command.name}</span>
-                <span className={styles.factDetail}>{command.detail}</span>
+            {BOARD.map((row) => (
+              <li key={row.name} className={styles.listRow}>
+                <span className={styles.listName}>{row.name}</span>
+                <span className={styles.factDetail}>{row.detail}</span>
               </li>
             ))}
           </ul>
@@ -148,12 +123,10 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
           <LanguageHeadline />
           <p className={styles.body}>
             English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian.
-            Choose your language on the first onboarding screen or in Settings.
-            Changes apply immediately, with right-to-left layouts for Hebrew.
+            Choose your language in Settings. Changes apply immediately, with right-to-left layouts for Hebrew.
           </p>
           <p className={styles.body}>
             Follows your Mac’s preferred languages by default. Project names, paths and commands stay as you wrote them.
-            The terminal interface stays in English.
           </p>
           <a className={styles.github} href="/guides/change-app-language">About translations <span aria-hidden>↗</span></a>
         </div>

@@ -92,6 +92,6 @@ Avoid silently picking a random free port. That’s how you end up with the same
 
 ## Fix it for good
 
-`EADDRINUSE` is what happens when running servers are invisible. Make them visible and it mostly goes away. [WhatThePort](/) is a free menu bar app that lists every dev server on your Mac with its port, project, branch and memory, so a stray server is obvious before it blocks a port. **Clean up** finds servers that have been idle for hours or whose git worktree has been deleted, and stops them together.
+`EADDRINUSE` is what happens when running servers are invisible. Make them visible and it mostly goes away. [Dev Servers](/) is a free menu bar app that lists helpers, local listeners and LAN devices, so a stray server is obvious before it blocks a port. Kill on the card stops that process.
 
 [Download WhatThePort](/WhatThePort.dmg) (Apple Silicon, macOS 14 or later).

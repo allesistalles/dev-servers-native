@@ -38,7 +38,6 @@ enum InterfaceLanguage: String, CaseIterable {
 /// names, commands, paths and machine-readable output never pass here.
 enum L10n {
     static var language: InterfaceLanguage {
-        if TerminalCommand.isRequested { return .english }
         let arguments = CommandLine.arguments
         let override = arguments.firstIndex(of: "--ui-language").flatMap { index in
             index + 1 < arguments.count ? InterfaceLanguage(rawValue: arguments[index + 1]) : nil
@@ -53,8 +52,10 @@ enum L10n {
     // SwiftPM's generated accessor looks beside Bundle.main.bundleURL. The
     // packaged app instead keeps resources in the standard Contents/Resources.
     static let resourceBundle: Bundle = {
-        if let url = Bundle.main.url(forResource: "WhatThePort_WhatThePort", withExtension: "bundle"),
-           let bundle = Bundle(url: url) { return bundle }
+        for name in ["DevServers_DevServers", "WhatThePort_WhatThePort"] {
+            if let url = Bundle.main.url(forResource: name, withExtension: "bundle"),
+               let bundle = Bundle(url: url) { return bundle }
+        }
         return Bundle.module
     }()
 

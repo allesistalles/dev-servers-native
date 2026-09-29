@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import WhatThePort
+@testable import DevServers
 
 struct LocalizationTests {
     @Test func resolvesSavedAndSystemLanguages() {

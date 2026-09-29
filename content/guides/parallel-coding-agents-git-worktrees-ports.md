@@ -43,7 +43,7 @@ Agents can’t see your browser tabs. Say where the server is in `CLAUDE.md` or 
 ## Dev server
 
 Run the dev server on $CONDUCTOR_PORT. Before starting one, check whether it's already
-running (`lsof -nP -iTCP:$CONDUCTOR_PORT -sTCP:LISTEN` or `wtp list --json`) and reuse it.
+running (`lsof -nP -iTCP:$CONDUCTOR_PORT -sTCP:LISTEN`) and reuse it.
 ```
 
 ## Clean up after deleted worktrees
@@ -71,10 +71,8 @@ Five worktrees means five copies of your framework’s dev server, each with its
 
 ## With WhatThePort
 
-[WhatThePort](/) was built for exactly this setup. Its menu bar list shows every server with its port, project and **branch**, so `:55390 feat/pricing` and `:55400 fix/nav` are easy to tell apart. Each server links back to the Conductor workspace or the Claude Code or Codex session that started it, and a server whose worktree has been deleted is labelled “Worktree deleted”.
+[Dev Servers](/) shows helpers, listeners and LAN devices on one board, with Open, Start, Restart and Kill on the card. It does not bulk-stop servers from deleted worktrees.
 
-**Clean up** preselects those servers, plus any that have been idle for hours, and stops their whole process trees together. Set it to Ask and WhatThePort notifies you when there’s something to clean up; set it to Automatic and it just happens.
-
-For agents, `wtp list --json` returns every server with its `folder`, `branch`, `url` and `session`, so an agent can find the server for its own worktree instead of starting another.
+The menu bar list shows each server’s folder, branch and session, so you can find the server for a worktree instead of starting another.
 
 [Download WhatThePort](/WhatThePort.dmg) for Apple Silicon Macs on macOS 14 or later.

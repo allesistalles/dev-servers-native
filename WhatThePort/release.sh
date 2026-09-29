@@ -11,10 +11,7 @@ if [[ -f update-config.env ]]; then
     source update-config.env
 fi
 export WTP_VERSION="$1" WTP_BUILD="$2"
-export SPARKLE_FEED_URL="${SPARKLE_FEED_URL:-}"
-export SPARKLE_PUBLIC_KEY="${SPARKLE_PUBLIC_KEY:-}"
 export CODE_SIGN_IDENTITY="${CODE_SIGN_IDENTITY:--}"
-export REQUIRE_UPDATES=--release
 python3 scripts/configure-updates.py Info.plist .build/configured-Info.plist
 
 # Notarize with a stored notarytool profile, or with an App Store Connect API key (used in CI).
@@ -36,21 +33,8 @@ if [[ ${#NOTARY_AUTH[@]} -eq 0 && "${CODE_SIGN_IDENTITY}" != "-" ]]; then
     echo "warning: signing without notarization. Gatekeeper will still block first-time downloads." >&2
 fi
 
-# Sparkle reads its private key from the login Keychain unless a key file is given (used in CI).
-SPARKLE_KEY=()
-if [[ -n "${SPARKLE_PRIVATE_KEY_FILE:-}" ]]; then
-    SPARKLE_KEY=(--ed-key-file "${SPARKLE_PRIVATE_KEY_FILE}")
-fi
-
-UPDATES=".build/updates"
-ARCHIVE="${UPDATES}/WhatThePort-${WTP_BUILD}.zip"
-if [[ -e "${ARCHIVE}" ]]; then
-    echo "${ARCHIVE} already exists. Use a new, increasing build number for each release." >&2
-    exit 1
-fi
 ./build-app.sh --release
-TOOLS=".build/artifacts/sparkle/Sparkle/bin"
-APP=".build/WhatThePort.app"
+APP=".build/Dev Servers.app"
 
 notarize() {
     local SUBMISSION SUBMISSION_ID STATUS
@@ -81,20 +65,5 @@ if [[ ${#NOTARY_AUTH[@]} -gt 0 ]]; then
     spctl --assess --type open --context context:primary-signature --verbose=2 .build/WhatThePort.dmg
 fi
 
-STAGING="$(mktemp -d .build/update-staging.XXXXXX)"
-trap 'rm -rf "${STAGING}"' EXIT
-mkdir -p "${STAGING}/updates"
-if [[ -d "${UPDATES}" ]]; then
-    ditto "${UPDATES}" "${STAGING}/updates"
-fi
-STAGED_ARCHIVE="${STAGING}/updates/WhatThePort-${WTP_BUILD}.zip"
-ditto -c -k --sequesterRsrc --keepParent "${APP}" "${STAGED_ARCHIVE}"
-SIGNATURE="$("${TOOLS}/sign_update" ${SPARKLE_KEY[@]+"${SPARKLE_KEY[@]}"} -p "${STAGED_ARCHIVE}")"
-# Check against the key embedded in the app, not just the one that signed.
-swift scripts/verify-update-signature.swift "${SPARKLE_PUBLIC_KEY}" "${STAGED_ARCHIVE}" "${SIGNATURE}"
-"${TOOLS}/generate_appcast" ${SPARKLE_KEY[@]+"${SPARKLE_KEY[@]}"} --download-url-prefix "${SPARKLE_FEED_URL%/*}/" "${STAGING}/updates"
-# Only expose artifacts after signing and feed generation both succeed.
-ditto "${STAGING}/updates" "${UPDATES}"
-
-echo "Prepared ${ARCHIVE}, ${UPDATES}/appcast.xml and .build/WhatThePort.dmg"
-echo "Publish the updates directory at ${SPARKLE_FEED_URL%/*}/ and replace the website download with .build/WhatThePort.dmg."
+echo "Prepared .build/WhatThePort.dmg"
+echo "Replace the website download with .build/WhatThePort.dmg."

@@ -66,7 +66,7 @@ Tell the agent how to check first. Add something like this to your project’s `
 ## Dev server
 
 Before starting a dev server, check whether one is already running for this folder:
-`lsof -nP -iTCP -sTCP:LISTEN` (or `wtp list --json` if WhatThePort is installed).
+`lsof -nP -iTCP -sTCP:LISTEN`.
 Reuse it if it is. Use the port in `$CONDUCTOR_PORT` if set, otherwise 3000.
 Never start a second copy on another port.
 ```
@@ -78,24 +78,6 @@ Two more things help:
 
 ## With WhatThePort
 
-[WhatThePort](/) is a free menu bar app built for this. It links every server to the Claude Code, Codex or Conductor session that started it, using the same environment variables and session files described above. Click a server to see its session, branch, folder and command, then resume the conversation or stop the server and its whole process tree.
-
-**Clean up** preselects servers from deleted worktrees and servers that have been idle for hours, so the leftovers from last week’s agent sessions go in one click. You can set it to ask first or to run automatically; servers that are leaking memory are never stopped automatically, and Postgres and Redis are protected by default.
-
-Agents can read the same list. `wtp list --json` prints every server with its port, folder, branch, status and the session that started it:
-
-```json
-[
-  {
-    "port": 3000,
-    "url": "http://localhost:3000",
-    "name": "marketing-site",
-    "branch": "feat/pricing",
-    "folder": "/Users/you/code/marketing-site",
-    "status": "running",
-    "session": { "kind": "Claude Code", "id": "3f2a…", "title": "Pricing page" }
-  }
-]
-```
+[Dev Servers](/) is the menu bar app in this fork. The popover is one board of helpers, local listeners and LAN devices. Open, Start, Restart and Kill stay on the card. It does not link a server to a coding-agent session or resume a terminal.
 
 [Download WhatThePort](/WhatThePort.dmg) for Apple Silicon Macs on macOS 14 or later.

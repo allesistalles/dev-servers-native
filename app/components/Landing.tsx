@@ -8,9 +8,8 @@ import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { DotGrid } from './icons'
 import { Screen } from './Screen'
-import { DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS, TERMINAL, TRANSLATIONS } from './sections'
+import { BOARD, DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS, TRANSLATIONS } from './sections'
 import { useHeadlineLanguage } from './LanguageHeadline'
-import { TerminalWindow } from './Terminal'
 
 // Scene geometry, in the 2560×1600 space the room photos and laptop were composed in (Paper boards 22–26).
 const SCENE = { width: 2560, height: 1600 }
@@ -129,7 +128,7 @@ function DeskStage({ stars }: { stars: number | null }) {
     window.scrollTo({ top, behavior: reduce || instant ? 'auto' : 'smooth' })
   }, [])
 
-  // Links like /#terminal scroll the page to that section.
+  // Links like /#board scroll the page to that section.
   useEffect(() => {
     const follow = (instant: boolean) => {
       const index = SECTIONS.findIndex((section) => `#${section.id}` === window.location.hash)
@@ -179,7 +178,7 @@ function StandalonePopover({ section, zoom }: { section: number; zoom: number })
   const language = useHeadlineLanguage()
   return (
     <div style={{ zoom }}>
-      <AppPopover demo={demo} language={section === TRANSLATIONS ? language : 'en'} />
+      <AppPopover demo={demo} language={section === TRANSLATIONS ? language : 'en'} focusBoard={section === BOARD} />
     </div>
   )
 }
@@ -211,10 +210,6 @@ function StackedPage({ stars }: { stars: number | null }) {
           >
             {index === GET_IT ? (
               <DotMatrix size={160} />
-            ) : index === TERMINAL ? (
-              <div style={{ zoom: Math.min(1, zoom * (400 / 500)) }}>
-                <TerminalWindow />
-              </div>
             ) : (
               <StandalonePopover section={index} zoom={zoom} />
             )}

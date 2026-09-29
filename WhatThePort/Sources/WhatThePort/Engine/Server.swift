@@ -20,13 +20,6 @@ enum ServerStatus {
     case idle
 }
 
-enum CleanUpReason: Equatable {
-    case worktreeDeleted
-    case idle(TimeInterval)
-    case longRunning(TimeInterval)
-    case leaking(UInt64)
-}
-
 /// A listening port and everything we know about the process tree behind it.
 struct Server: Identifiable {
     let port: Int
@@ -42,8 +35,6 @@ struct Server: Identifiable {
     var launchDirectory: String?
     var startedAt: Date?
     var project: ProjectInfo
-    var conductorWorkspace: String?
-    var agent: AgentSession?
     var processes: [ServerProcess]
     /// Identity of every process in the tree, so we never signal a reused pid.
     var processStarts: [pid_t: Date]
@@ -80,7 +71,6 @@ struct Server: Identifiable {
 
     /// Short location label: Conductor workspace, git worktree, or parent folder.
     var locationLabel: String {
-        if let conductorWorkspace { return conductorWorkspace }
         if let worktree = project.worktreeName { return worktree }
         guard let root = project.root ?? cwd else { return project.name }
         let parent = (root as NSString).deletingLastPathComponent

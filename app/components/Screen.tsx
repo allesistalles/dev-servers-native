@@ -6,9 +6,8 @@ import { AppPopover, useDemo } from './App'
 import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { BatteryIcon, DotGrid, GitHubIcon, WifiIcon } from './icons'
-import { GET_IT, GITHUB_URL, SECTIONS, TERMINAL, TRANSLATIONS } from './sections'
+import { BOARD, GET_IT, GITHUB_URL, SECTIONS, TRANSLATIONS } from './sections'
 import { useHeadlineLanguage } from './LanguageHeadline'
-import { TerminalWindow } from './Terminal'
 
 type Props = {
   active: number
@@ -85,15 +84,13 @@ export function Screen({ active, stars, onNavigate }: Props) {
         <DotMatrix size={176} playing={active === GET_IT} />
       </div>
 
-      <TerminalWindow visible={active === TERMINAL} desktop />
-
       <div className={styles.popoverShell} data-open={demo.open}>
-        <AppPopover demo={demo} language={active === TRANSLATIONS ? language : 'en'} />
+        <AppPopover demo={demo} language={active === TRANSLATIONS ? language : 'en'} focusBoard={active === BOARD} />
       </div>
 
       <nav className={styles.menuBar}>
         <div className={styles.menus}>
-          <span className={`${styles.menuItem} ${styles.menuApp}`}>WhatThePort</span>
+          <span className={`${styles.menuItem} ${styles.menuApp}`}>Dev Servers</span>
           {SECTIONS.map((section, index) => (
             <button
               key={section.id}
@@ -112,7 +109,7 @@ export function Screen({ active, stars, onNavigate }: Props) {
             className={styles.statusItem}
             data-open={demo.open}
             onClick={() => demo.setOpen((open) => !open)}
-            aria-label={demo.open ? 'Close WhatThePort' : 'Open WhatThePort'}
+            aria-label={demo.open ? 'Close Dev Servers' : 'Open Dev Servers'}
             aria-expanded={demo.open}
           >
             <DotGrid state={alert ? 'alert' : 'rest'} />

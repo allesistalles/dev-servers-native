@@ -1,46 +1,31 @@
 import AppKit
+import DevServersCore
 
-/// Right-click (or Control-click) menu for the menu bar icon. MenuBarExtra has
-/// no API for one, so watch for secondary clicks on its status bar button.
+/// Right-click (or Control-click) menu for the status button. The button sends
+/// leftMouseUp and rightMouseUp; this does not install an event monitor.
 @MainActor
 enum StatusItemMenu {
-    private static var eventMonitor: Any?
-
-    static func install(monitor: ServerMonitor, openSettings: @escaping () -> Void) {
-        guard eventMonitor == nil else { return }
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown, .leftMouseDown]) { event in
-            let secondary = event.type == .rightMouseDown || event.modifierFlags.contains(.control)
-            guard secondary, let button = StatusItemOpener.findButton(in: event.window?.contentView) else { return event }
-            show(from: button, monitor: monitor, openSettings: openSettings)
-            return nil
-        }
-    }
-
-    private static func show(from button: NSStatusBarButton, monitor: ServerMonitor, openSettings: @escaping () -> Void) {
+    static func show(from button: NSStatusBarButton, monitor: ServerMonitor, openPopover: @escaping () -> Void, openSettings: @escaping () -> Void) {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        menu.addItem(ActionItem(L10n.text("Open WhatThePort")) { StatusItemOpener.open() })
+        menu.addItem(ActionItem(L10n.text("Open Dev Servers"), action: openPopover))
 
         let browser = NSMenuItem(title: L10n.text("Open in Browser"), action: nil, keyEquivalent: "")
         let servers = NSMenu()
-        for server in monitor.servers {
-            servers.addItem(ActionItem("localhost:\(String(server.port))  \(server.project.branch ?? server.project.name)") {
-                Usage.record(.openBrowser)
-                NSWorkspace.shared.open(server.url)
+        for item in monitor.board where CardActions.canOpen(item) {
+            servers.addItem(ActionItem("\(item.title)  \(item.url)") {
+                monitor.open(item)
             })
         }
         browser.submenu = servers
-        browser.isEnabled = !monitor.servers.isEmpty
+        browser.isEnabled = servers.numberOfItems > 0
         menu.addItem(browser)
 
         menu.addItem(.separator())
         let settings = ActionItem(L10n.text("Settings…"), action: openSettings)
         settings.keyEquivalent = ","
         menu.addItem(settings)
-        let updates = ActionItem(L10n.text("Check for Updates…")) { AppUpdater.shared.checkForUpdates() }
-        updates.isEnabled = AppUpdater.shared.canCheckForUpdates
-        menu.addItem(updates)
 
         let feedback = NSMenuItem(title: L10n.text("Send Feedback"), action: nil, keyEquivalent: "")
         feedback.submenu = NSMenu()
@@ -49,7 +34,7 @@ enum StatusItemMenu {
         menu.addItem(feedback)
 
         menu.addItem(.separator())
-        let quit = ActionItem(L10n.text("Quit WhatThePort")) { NSApp.terminate(nil) }
+        let quit = ActionItem(L10n.text("Quit Dev Servers")) { NSApp.terminate(nil) }
         quit.keyEquivalent = "q"
         menu.addItem(quit)
 

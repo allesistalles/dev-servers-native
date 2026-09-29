@@ -179,6 +179,34 @@ export const SERVERS: Server[] = [
 
 // Stable identities: stopping a server must not recolor the remaining ports.
 const PORT_COLORS = ['#6EC7ED', '#B599F0', '#EB9CD4', '#7D9CF2', '#7DDBE0', '#D9A3F2', '#ABC2E0']
+export type ExtraRow = {
+  id: string
+  port: string
+  name: string
+  detail: string
+}
+
+export const DEMO_GROUPS: { title: string; rows: ExtraRow[] }[] = [
+  {
+    title: 'Needs attention',
+    rows: [{ id: 'claude-mem', port: '37777', name: 'Claude-mem', detail: 'Stopped' }],
+  },
+  {
+    title: 'Pinned',
+    rows: [
+      { id: 'dialdash', port: '7878', name: 'DialDash', detail: 'Pushes DialDash / screen-dial data into the tray bridge' },
+      { id: 'led', port: '5177', name: 'LED Round Dial', detail: 'Browser twin for the LED Round Dial' },
+    ],
+  },
+  {
+    title: 'On the network',
+    rows: [
+      { id: 'monster', port: '80', name: 'Monster Settings', detail: 'Wi-Fi / settings portal for monster' },
+      { id: 'kitchen', port: '3232', name: 'kitchen', detail: 'Firmware only' },
+    ],
+  },
+]
+
 export const portColor = (port: string) =>
   PORT_COLORS[
     Math.max(

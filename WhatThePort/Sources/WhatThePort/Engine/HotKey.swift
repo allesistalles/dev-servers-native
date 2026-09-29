@@ -1,7 +1,7 @@
 import AppKit
 import Carbon.HIToolbox
 
-/// Global ⌥⌘P shortcut that opens the popover, via Carbon's hot key API (the
+/// Global ⌥⌘P shortcut that toggles the popover, via Carbon's hot key API (the
 /// only public way to register a system-wide shortcut without Accessibility).
 @MainActor
 final class HotKey {
@@ -19,8 +19,9 @@ final class HotKey {
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in
             DispatchQueue.main.async {
-                Usage.record(.shortcut)
-                StatusItemOpener.open()
+                Task { @MainActor in
+                    StatusItemController.shared.togglePopover()
+                }
             }
             return noErr
         }, 1, &eventType, nil, &handlerRef)
