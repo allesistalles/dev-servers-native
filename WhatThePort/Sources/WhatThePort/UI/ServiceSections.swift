@@ -118,12 +118,12 @@ private struct BoardCard: View {
                 }
                 Spacer(minLength: 0)
             }
+            .contentShape(Rectangle())
+            .onTapGesture { activate() }
             actions
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .contentShape(Rectangle())
-        .onTapGesture { activate() }
     }
 
     private var firmware: Bool {

@@ -44,6 +44,9 @@ enum Theme {
     }
 
     static let popoverWidth: CGFloat = 400
+    /// Whole popover, including the gear row. Same cap as the marketing demo.
+    /// A taller panel is pushed off the status item and stops taking clicks.
+    static let popoverMaxHeight: CGFloat = 672
     static let inset: CGFloat = 16
 
     // Three sizes (28 display, 13 body, 11 caption) and two weights.

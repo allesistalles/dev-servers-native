@@ -4,6 +4,10 @@ import SwiftUI
 struct ServersView: View {
     @ObservedObject var monitor: ServerMonitor
     let openSettings: () -> Void
+    @State private var boardHeight: CGFloat = 0
+
+    /// Gear row (12pt padding, 26pt button, divider). Kept out of the scroller.
+    private var maxBoardHeight: CGFloat { Theme.popoverMaxHeight - 52 }
 
     init(monitor: ServerMonitor, openSettings: @escaping () -> Void) {
         self.monitor = monitor
@@ -12,7 +16,11 @@ struct ServersView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            BoardSections(monitor: monitor)
+            ScrollView {
+                BoardSections(monitor: monitor)
+                    .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { boardHeight = $0 }
+            }
+            .frame(height: min(boardHeight > 0 ? boardHeight : maxBoardHeight, maxBoardHeight))
             SectionDivider()
             HStack {
                 Spacer()

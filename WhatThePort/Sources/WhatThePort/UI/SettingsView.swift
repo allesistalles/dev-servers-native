@@ -1,4 +1,3 @@
-import AppKit
 import ServiceManagement
 import SwiftUI
 
@@ -73,40 +72,6 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .frame(width: 740, height: 560)
-        .background(SettingsWindowActivator())
-    }
-}
-
-/// LSUIElement apps stay `.accessory`, so a SwiftUI window opened from the menu
-/// bar is ordered front without becoming key. The navigation title then uses the
-/// inactive color. Activate once the window exists and make it key.
-private struct SettingsWindowActivator: NSViewRepresentable {
-    func makeCoordinator() -> Coordinator { Coordinator() }
-
-    func makeNSView(context: Context) -> NSView { NSView() }
-
-    func updateNSView(_ view: NSView, context: Context) {
-        DispatchQueue.main.async {
-            guard let window = view.window else { return }
-            context.coordinator.attach(window)
-        }
-    }
-
-    final class Coordinator: NSObject {
-        private var attached = false
-
-        func attach(_ window: NSWindow) {
-            guard !attached else { return }
-            attached = true
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-            window.makeKeyAndOrderFront(nil)
-            NotificationCenter.default.addObserver(self, selector: #selector(windowWillClose(_:)), name: NSWindow.willCloseNotification, object: window)
-        }
-
-        @objc private func windowWillClose(_ notification: Notification) {
-            NSApp.setActivationPolicy(.accessory)
-        }
     }
 }
 

@@ -62,6 +62,13 @@ private struct PopoverWindowFitter: NSViewRepresentable {
 
     private static func fit(_ window: NSWindow, _ coordinator: Coordinator) {
         guard needsFit(window, coordinator) else { return }
+        // MenuBarExtra's window is a nonactivating panel anchored to the status
+        // item. setFrame detaches that panel: it stays on screen, outside clicks
+        // and the icon stop dismissing it, and it stops delivering mouse events.
+        // Apps built with the macOS 26 SDK get the resize from SwiftUI instead.
+        guard !(window is NSPanel),
+              !window.styleMask.contains(.nonactivatingPanel),
+              window.level == .normal else { return }
         let content = window.contentRect(forFrameRect: window.frame)
         let target = window.frameRect(forContentRect: NSRect(x: 0, y: 0, width: content.width, height: coordinator.height)).height
         var frame = window.frame
