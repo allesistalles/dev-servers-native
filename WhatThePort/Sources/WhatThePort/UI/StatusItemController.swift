@@ -19,6 +19,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private var settingsWindow: NSWindow?
     private var boardCancellable: AnyCancellable?
     private var defaultsObserver: NSObjectProtocol?
+    private var resignObserver: NSObjectProtocol?
+    private var spaceObserver: NSObjectProtocol?
     private var globalMonitor: Any?
     private var localMonitor: Any?
     /// Set when a click on the status button is what closed the popover, so the
@@ -51,14 +53,19 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         let host = NSHostingController(rootView: LocalizedView {
             PopoverRoot(monitor: monitor, openSettings: { [weak self] in
                 self?.openSettings()
+            }, onContentHeight: { [weak self] height in
+                self?.applyPopoverHeight(height)
             })
         })
-        host.sizingOptions = .preferredContentSize
+        // preferredContentSize is updated from SwiftUI, but NSPopover does not
+        // resize itself when that value changes after show. applyPopoverHeight
+        // writes popover.contentSize from the measured board height.
+        host.sizingOptions = [.preferredContentSize]
+        host.view.clipsToBounds = true
         popover.contentViewController = host
         popover.behavior = .transient
         popover.animates = true
         popover.delegate = self
-        popover.contentSize = NSSize(width: Theme.popoverWidth, height: 320)
 
         boardCancellable = monitor.$board
             .receive(on: DispatchQueue.main)
@@ -73,6 +80,29 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             MainActor.assumeIsolated { self?.updateIcon() }
         }
         updateIcon()
+        resignObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.closePopover() }
+        }
+        spaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.closePopover() }
+        }
+    }
+
+    /// Width stays 400. Height tracks the board and never passes the popover cap.
+    private func applyPopoverHeight(_ height: CGFloat) {
+        let clamped = min(max(height, 1), Theme.popoverMaxHeight)
+        let size = NSSize(width: Theme.popoverWidth, height: clamped)
+        guard abs(popover.contentSize.width - size.width) > 0.5
+                || abs(popover.contentSize.height - size.height) > 0.5 else { return }
+        popover.contentSize = size
     }
 
     /// ⌥⌘P and a plain click. Shown → close. Hidden → show.
@@ -94,7 +124,19 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             button.isHighlighted = false
             return
         }
+        makePopoverKey()
         installMonitors()
+    }
+
+    /// Esc and cancelOperation only reach the popover once its window is key.
+    private func makePopoverKey() {
+        popover.contentViewController?.view.window?.makeKey()
+        DispatchQueue.main.async { [weak self] in
+            MainActor.assumeIsolated {
+                guard self?.popover.isShown == true else { return }
+                self?.popover.contentViewController?.view.window?.makeKey()
+            }
+        }
     }
 
     func closePopover() {

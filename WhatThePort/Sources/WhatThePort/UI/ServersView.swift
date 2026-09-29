@@ -18,9 +18,12 @@ struct ServersView: View {
         VStack(spacing: 0) {
             ScrollView {
                 BoardSections(monitor: monitor)
+                    // Ideal height, not the popover's current proposal, so the
+                    // measurement still grows after the window has opened short.
+                    .fixedSize(horizontal: false, vertical: true)
                     .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { boardHeight = $0 }
             }
-            .frame(height: min(boardHeight > 0 ? boardHeight : maxBoardHeight, maxBoardHeight))
+            .frame(height: boardHeight > 1 ? min(boardHeight, maxBoardHeight) : nil)
             SectionDivider()
             HStack {
                 Spacer()
