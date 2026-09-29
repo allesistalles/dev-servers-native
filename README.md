@@ -199,4 +199,4 @@ Made by [Tomjohn](https://tomjohn.design). Explore the [interactive demo](https:
 
 ## License
 
-MIT
+[MIT](LICENSE)
