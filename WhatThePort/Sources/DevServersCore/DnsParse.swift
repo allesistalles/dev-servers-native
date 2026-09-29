@@ -36,6 +36,7 @@ public enum DnsSdParse {
         ("_esphomelib._tcp", "esphome", ""),
         ("_home-assistant._tcp", "homeassistant", "http"),
         ("_hap._tcp", "hap", ""),
+        ("_workstation._tcp", "workstation", ""),
     ]
 
     public static let portalPorts = [80, 443, 3000, 5173, 5177, 8000, 8080, 8123, 8765, 8787, 9000]
@@ -44,6 +45,24 @@ public enum DnsSdParse {
     static let resolveLine = "can be reached at (\\S+?):(\\d+)"
 
     public static func isHttpishPort(_ port: Int) -> Bool { portalPorts.contains(port) }
+
+    /// Any HTTP status, including 401, 403 and 404, means the portal is up.
+    public static func isHTTPResponse(_ text: String) -> Bool {
+        text.hasPrefix("HTTP/")
+    }
+
+    public static func htmlTitle(in text: String) -> String {
+        let pattern = "<" + "title[^>]*>\\s*([^<]*?)\\s*</" + "title>"
+        guard let match = firstMatch(pattern, in: text, insensitive: true), match.count >= 2 else { return "" }
+        let title = match[1]
+            .replacingOccurrences(of: "&amp;", with: "&")
+            .replacingOccurrences(of: "&lt;", with: "<")
+            .replacingOccurrences(of: "&gt;", with: ">")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&#39;", with: "'")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return title
+    }
 
     public static func serviceLabel(_ kind: String) -> String {
         if kind == "arduino" { return "Arduino OTA" }

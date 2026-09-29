@@ -21,6 +21,14 @@ class ReleaseConfigurationTests(unittest.TestCase):
     def test_unconfigured_local_build_preserves_metadata(self):
         self.assertEqual(module.configure({"CFBundleVersion": "3"}, {}), {"CFBundleVersion": "3"})
 
+    def test_keeps_local_network_privacy_keys(self):
+        info = module.configure({
+            "NSLocalNetworkUsageDescription": "Dev Servers finds web portals and devices on your local network.",
+            "NSBonjourServices": ["_http._tcp", "_arduino._tcp"],
+        }, {})
+        self.assertEqual(info["NSLocalNetworkUsageDescription"], "Dev Servers finds web portals and devices on your local network.")
+        self.assertEqual(info["NSBonjourServices"], ["_http._tcp", "_arduino._tcp"])
+
     def test_host_app_version_does_not_override_bundle_version(self):
         info = {"CFBundleShortVersionString": "2.1", "CFBundleVersion": "3"}
         self.assertEqual(module.configure(dict(info), {"APP_VERSION": "0.87.3", "APP_BUILD": "999"}), info)

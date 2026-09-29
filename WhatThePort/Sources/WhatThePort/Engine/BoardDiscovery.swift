@@ -43,50 +43,76 @@ enum BoardDiscovery {
 
     static func discover(local: [LocalServer], bonjour: [BonjourService], addressCache: [String: String]) -> (lan: [BoardItem], seed: [BoardItem], cache: [String: String]) {
         var cache = addressCache
-        let lanFromBrowse = bonjour.compactMap { BoardMerge.bonjourItem($0) }
-        for item in lanFromBrowse where !item.address.isEmpty {
-            cache[BoardMerge.canonicalizeHost(item.host)] = item.address
+        for (host, ip) in HostTitles.knownAddresses {
+            let key = BoardMerge.canonicalizeHost(host)
+            if cache[key] == nil { cache[key] = ip }
         }
-        let seeds = seedHosts()
-        let jobs = BoardMerge.probeJobs(local: local, lan: lanFromBrowse, seeds: seeds)
-        var lan = lanFromBrowse
-        var seed: [BoardItem] = []
+        let sightings = bonjour.compactMap(LanClassify.sighting)
+        for sighting in sightings where !sighting.address.isEmpty {
+            let key = BoardMerge.canonicalizeHost(sighting.host)
+            if cache[key] == nil { cache[key] = sighting.address }
+        }
+        // An empty or failed browse still probes seeds and these sightings.
+        var jobs = BoardMerge.probeJobs(local: local, lan: [], seeds: seedHosts())
+        var seen = Set(jobs.map { "\(BoardMerge.canonicalizeHost($0.host)):\($0.port)" })
+        for job in LanClassify.probePlan(sightings) where seen.insert("\(job.host):\(job.port)").inserted {
+            jobs.append(job)
+        }
         let group = DispatchGroup()
-        let box = ItemBox()
+        let box = ProbeBox()
         let gate = DispatchSemaphore(value: 6)
         for job in jobs {
             group.enter()
             DispatchQueue.global(qos: .utility).async {
                 gate.wait()
                 defer { gate.signal(); group.leave() }
-                guard let found = probe(job, cache: cache) else { return }
-                box.append(found.item, address: found.address)
+                box.append(probe(job, cache: cache))
             }
         }
-        _ = group.wait(timeout: .now() + 8)
-        for (item, address) in box.snapshot() {
-            if !address.isEmpty { cache[BoardMerge.canonicalizeHost(item.host)] = address }
-            if item.source == "lan" { lan.append(item) } else { seed.append(item) }
+        _ = group.wait(timeout: .now() + 30)
+        let probes = box.snapshot()
+        for probe in probes where !probe.address.isEmpty {
+            cache[BoardMerge.canonicalizeHost(probe.host)] = probe.address
         }
-        return (lan, seed, cache)
+        let fromBrowse = LanClassify.cards(sightings: sightings, probes: probes)
+        let browsedHosts = Set(fromBrowse.map { BoardMerge.canonicalizeHost($0.host) })
+        var seedByHost: [String: BoardItem] = [:]
+        for probe in probes where probe.up && probe.source != "local" {
+            let host = BoardMerge.canonicalizeHost(probe.host)
+            if browsedHosts.contains(host) { continue }
+            var item = BoardItem(
+                url: DnsSdParse.portalUrl(host, probe.port, probe.port == 443 ? "https" : "http"),
+                host: host,
+                port: probe.port,
+                source: "seed",
+                status: "up",
+                address: probe.address,
+                htmlTitle: probe.htmlTitle
+            )
+            item.title = HostTitles.listenerTitle(item)
+            item.id = "seed:\(host):\(probe.port)"
+            if let existing = seedByHost[host], existing.port == 80 || (probe.port != 80 && probe.port >= existing.port) { continue }
+            seedByHost[host] = item
+        }
+        return (fromBrowse, Array(seedByHost.values), cache)
     }
 
-    private static func probe(_ job: ProbeJob, cache: [String: String]) -> (item: BoardItem, address: String)? {
-        let budget = TimeInterval(DnsSdParse.lookupBudgetMs(host: job.host)) / 1000
-        let lookups = (0..<DnsSdParse.lookupAttempts(for: job.host)).map { _ in lookupIPv4(job.host, timeout: budget) }
-        let dns = lookups.contains(where: { $0 != nil }) ? nil : dnsSdIPv4(job.host)
-        guard let address = DnsSdParse.chooseAddress(host: job.host, provided: job.address.nilIfEmpty, lookups: lookups, dnsSd: dns, cached: cache[BoardMerge.canonicalizeHost(job.host)]) else { return nil }
+    private static func probe(_ job: ProbeJob, cache: [String: String]) -> PortProbe {
+        let address: String?
+        if let pinned = job.address.nilIfEmpty, DnsSdParse.isIpv4(pinned) {
+            address = pinned
+        } else {
+            let budget = TimeInterval(DnsSdParse.lookupBudgetMs(host: job.host)) / 1000
+            let lookups = (0..<DnsSdParse.lookupAttempts(for: job.host)).map { _ in lookupIPv4(job.host, timeout: budget) }
+            let dns = lookups.contains(where: { $0 != nil }) ? nil : dnsSdIPv4(job.host)
+            address = DnsSdParse.chooseAddress(host: job.host, provided: nil, lookups: lookups, dnsSd: dns, cached: cache[BoardMerge.canonicalizeHost(job.host)])
+        }
+        guard let address else {
+            return PortProbe(host: job.host, port: job.port, up: false, source: job.source)
+        }
         let https = job.port == 443
-        guard httpUp(host: job.host, address: address, port: job.port, https: https) else { return nil }
-        let item = BoardItem(
-            url: DnsSdParse.portalUrl(job.host, job.port, https ? "https" : "http"),
-            host: job.host,
-            port: job.port,
-            source: job.source,
-            status: "up",
-            address: address
-        )
-        return (item, address)
+        let result = httpUp(host: job.host, address: address, port: job.port, https: https)
+        return PortProbe(host: job.host, port: job.port, up: result.up, htmlTitle: result.title, address: address, source: job.source)
     }
 
     private static func lookupIPv4(_ host: String, timeout: TimeInterval) -> String? {
@@ -133,35 +159,49 @@ enum BoardDiscovery {
         return String(data: data, encoding: .utf8) ?? ""
     }
 
-    private static func httpUp(host: String, address: String, port: Int, https: Bool) -> Bool {
-        if https { return tlsUp(host: host, address: address, port: port) }
+    private static func httpUp(host: String, address: String, port: Int, https: Bool) -> (up: Bool, title: String) {
+        if https { return (tlsUp(host: host, address: address, port: port), "") }
+        var up = false
+        var title = ""
         for method in ["HEAD", "GET"] {
-            if rawHTTP(method: method, host: host, address: address, port: port) { return true }
+            let result = rawHTTP(method: method, host: host, address: address, port: port)
+            if result.up {
+                up = true
+                if title.isEmpty { title = result.title }
+            }
+            if method == "GET" { break }
         }
-        return false
+        return (up, title)
     }
 
-    private static func rawHTTP(method: String, host: String, address: String, port: Int) -> Bool {
+    private static func rawHTTP(method: String, host: String, address: String, port: Int) -> (up: Bool, title: String) {
         var hints = addrinfo()
         hints.ai_family = AF_INET
         hints.ai_socktype = SOCK_STREAM
         var info: UnsafeMutablePointer<addrinfo>?
-        guard getaddrinfo(address, String(port), &hints, &info) == 0, let info else { return false }
+        guard getaddrinfo(address, String(port), &hints, &info) == 0, let info else { return (false, "") }
         defer { freeaddrinfo(info) }
         let fd = socket(info.pointee.ai_family, info.pointee.ai_socktype, info.pointee.ai_protocol)
-        guard fd >= 0 else { return false }
+        guard fd >= 0 else { return (false, "") }
         defer { close(fd) }
         var timeout = timeval(tv_sec: 0, tv_usec: 400_000)
         setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
         setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
-        guard connect(fd, info.pointee.ai_addr, info.pointee.ai_addrlen) == 0 else { return false }
+        guard connect(fd, info.pointee.ai_addr, info.pointee.ai_addrlen) == 0 else { return (false, "") }
         let request = "\(method) / HTTP/1.0\r\nHost: \(host)\r\nConnection: close\r\n\r\n"
         _ = request.withCString { send(fd, $0, strlen($0), 0) }
-        var buffer = [UInt8](repeating: 0, count: 64)
-        let count = recv(fd, &buffer, buffer.count, 0)
-        guard count > 0 else { return false }
-        let text = String(bytes: buffer.prefix(count), encoding: .utf8) ?? ""
-        return text.hasPrefix("HTTP/")
+        var collected = Data()
+        while collected.count < 8192 {
+            var buffer = [UInt8](repeating: 0, count: 1024)
+            let count = recv(fd, &buffer, buffer.count, 0)
+            if count <= 0 { break }
+            collected.append(buffer, count: count)
+            if method == "HEAD" { break }
+            if let text = String(data: collected, encoding: .utf8), text.contains("</title>") { break }
+        }
+        let text = String(data: collected, encoding: .utf8) ?? ""
+        let up = DnsSdParse.isHTTPResponse(text)
+        return (up, up ? DnsSdParse.htmlTitle(in: text) : "")
     }
 
     private static func tlsUp(host: String, address: String, port: Int) -> Bool {
@@ -193,13 +233,13 @@ private final class TrustAll: NSObject, URLSessionDelegate {
     }
 }
 
-private final class ItemBox: @unchecked Sendable {
+private final class ProbeBox: @unchecked Sendable {
     private let lock = NSLock()
-    private var items: [(BoardItem, String)] = []
-    func append(_ item: BoardItem, address: String) {
-        lock.lock(); items.append((item, address)); lock.unlock()
+    private var items: [PortProbe] = []
+    func append(_ item: PortProbe) {
+        lock.lock(); items.append(item); lock.unlock()
     }
-    func snapshot() -> [(BoardItem, String)] {
+    func snapshot() -> [PortProbe] {
         lock.lock(); defer { lock.unlock() }; return items
     }
 }

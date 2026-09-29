@@ -60,7 +60,7 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 - **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
 - **Board** - Overview, All, Local, LAN, Stopped and System. Open, Start, Restart and Kill stay on the card
-- **LAN** - mDNS portals and seed hosts, including Monster Settings. Firmware-only devices stay OTA-only
+- **LAN** - mDNS hosts on `_http`, `_arduino` and `_esphomelib`, probed on the advertised port and port 80. Any HTTP response, including 404, is a portal with Open. No HTTP response is one OTA card per host. Seed hosts are still probed if browse returns nothing
 - **Global shortcut** - ⌥⌘P opens the popover
 - **Light and dark mode** - Follows your Mac’s appearance, with matching port numbers and colon colors
 

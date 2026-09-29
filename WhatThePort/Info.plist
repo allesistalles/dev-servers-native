@@ -24,5 +24,17 @@
     <string>14.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Dev Servers finds web portals and devices on your local network.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_http._tcp</string>
+        <string>_https._tcp</string>
+        <string>_esphomelib._tcp</string>
+        <string>_arduino._tcp</string>
+        <string>_home-assistant._tcp</string>
+        <string>_hap._tcp</string>
+        <string>_workstation._tcp</string>
+    </array>
 </dict>
 </plist>

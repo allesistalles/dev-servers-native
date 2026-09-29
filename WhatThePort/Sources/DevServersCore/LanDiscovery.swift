@@ -7,6 +7,7 @@ public enum BonjourServiceType: String, CaseIterable, Sendable {
     case arduino = "_arduino._tcp"
     case homeAssistant = "_home-assistant._tcp"
     case hap = "_hap._tcp"
+    case workstation = "_workstation._tcp"
 
     public static var browseTypes: [String] { allCases.map(\.rawValue) }
 

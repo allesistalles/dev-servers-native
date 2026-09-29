@@ -48,6 +48,8 @@ final class BonjourBrowser: NSObject, NetServiceDelegate, @unchecked Sendable {
             browser.browseResultsChangedHandler = { [weak self] results, _ in
                 self?.apply(results, type: type)
             }
+            // A failed or empty browse leaves `services` empty. Discovery still probes seeds.
+            browser.stateUpdateHandler = { _ in }
             browser.start(queue: queue)
             browsers.append(browser)
         }

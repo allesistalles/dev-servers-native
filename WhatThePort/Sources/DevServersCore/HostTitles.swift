@@ -17,6 +17,26 @@ public enum HostTitles {
         "stash-buddy.local",
         "homeassistant.local",
         "192.168.0.45",
+        "flip-clock.local",
+        "sidecoffee-dial.local",
+        "bedside-dial.local",
+        "led-round-dial.local",
+        "printstatus.local",
+        "p1s-tft.local",
+        "staufenplatz-eink.local",
+    ]
+
+    /// Last-resort IPv4 when mDNS name lookup fails. dns-sd and getaddrinfo win when they answer.
+    public static let knownAddresses: [String: String] = [
+        "climate.local": "192.168.0.226",
+        "flip-clock.local": "192.168.0.220",
+        "pixel.local": "192.168.0.243",
+        "shorty.local": "192.168.0.101",
+        "solly.local": "192.168.0.199",
+        "8x8.local": "192.168.0.188",
+        "monster.local": "192.168.0.148",
+        "homeassistant.local": "192.168.0.45",
+        "sidecoffee-dial.local": "192.168.0.90",
     ]
 
     public static let helperPorts = [5177, 8765, 8787]
@@ -166,6 +186,8 @@ public enum HostTitles {
     }
 
     public static func listenerTitle(_ item: BoardItem) -> String {
+        let html = item.htmlTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !html.isEmpty && !genericTitles.contains(html.lowercased()) { return html }
         if let friendly = friendlyTitleFor(item) { return friendly }
         if let fromClone = cloneRootTitle(item.cwd.isEmpty ? item.shortCwd : item.cwd) { return fromClone }
         let project = (item.project.isEmpty ? item.title : item.project).trimmingCharacters(in: .whitespacesAndNewlines)

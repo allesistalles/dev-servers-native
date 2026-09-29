@@ -409,10 +409,7 @@ public enum BoardMerge {
         for card in items {
             if isStoppedHelper(card) || isSystemCard(card) { continue }
             if card.source != "lan" && card.source != "seed" { continue }
-            let title = card.title.trimmingCharacters(in: .whitespacesAndNewlines)
-            let monster = title.range(of: "^monster", options: [.regularExpression, .caseInsensitive]) != nil
-            if !fleetTitles.contains(title) && !monster { continue }
-            let key = "\(title):\(card.host.lowercased())"
+            let key = canonicalizeHost(card.host)
             if seen.contains(key) { continue }
             seen.insert(key)
             out.append(card)

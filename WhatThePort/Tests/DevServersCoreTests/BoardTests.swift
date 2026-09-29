@@ -275,6 +275,97 @@ struct BoardTests {
         #expect(!BoardMerge.isStoppedHelper(system))
     }
 
+    @Test func lanFleetClassification() {
+        #expect(DnsSdParse.isHTTPResponse("HTTP/1.1 404 Not Found\r\n"))
+        #expect(DnsSdParse.isHTTPResponse("HTTP/1.0 401 Unauthorized\r\n"))
+        #expect(DnsSdParse.isHTTPResponse("HTTP/1.1 403 Forbidden\r\n"))
+        #expect(!DnsSdParse.isHTTPResponse(""))
+        #expect(DnsSdParse.htmlTitle(in: "HTTP/1.1 200 OK\r\n\r\n<html><title>Pixel Pet</title>") == "Pixel Pet")
+        #expect(DnsSdParse.htmlTitle(in: "<title> Eight </title>") == "Eight")
+
+        let sightings = [
+            LanSighting(instance: "climate", host: "climate.local", port: 80, kind: "http", address: "192.168.0.226"),
+            LanSighting(instance: "climate", host: "climate.local", port: 3232, kind: "arduino", address: "192.168.0.226"),
+            LanSighting(instance: "flip-clock", host: "flip-clock.local", port: 80, kind: "http", address: "192.168.0.220"),
+            LanSighting(instance: "flip-clock", host: "flip-clock.local", port: 6053, kind: "esphome", address: "192.168.0.220"),
+            LanSighting(instance: "pixel", host: "pixel.local", port: 80, kind: "http", address: "192.168.0.243"),
+            LanSighting(instance: "shorty", host: "shorty.local", port: 80, kind: "http", address: "192.168.0.101"),
+            LanSighting(instance: "solly", host: "solly.local", port: 80, kind: "http", address: "192.168.0.199"),
+            LanSighting(instance: "8x8", host: "8x8.local", port: 3232, kind: "arduino", address: "192.168.0.188"),
+            LanSighting(instance: "Monster Settings", host: "monster.local", port: 3232, kind: "arduino", address: "192.168.0.148"),
+            LanSighting(instance: "Home", host: "homeassistant.local", port: 8123, kind: "homeassistant", address: "192.168.0.45"),
+            LanSighting(instance: "sidecoffee-dial", host: "sidecoffee-dial.local", port: 3232, kind: "arduino", address: "192.168.0.90"),
+            LanSighting(instance: "bedside-dial", host: "bedside-dial.local", port: 6053, kind: "esphome"),
+            LanSighting(instance: "led-round-dial", host: "led-round-dial.local", port: 6053, kind: "esphome"),
+            LanSighting(instance: "printstatus", host: "printstatus.local", port: 6053, kind: "esphome"),
+            LanSighting(instance: "p1s-tft", host: "p1s-tft.local", port: 3232, kind: "arduino"),
+            LanSighting(instance: "stash-buddy", host: "stash-buddy.local", port: 3232, kind: "arduino"),
+            LanSighting(instance: "staufenplatz-eink", host: "staufenplatz-eink.local", port: 3232, kind: "arduino"),
+            LanSighting(instance: "Cam", host: "cam.local", port: 49234, kind: "hap"),
+        ]
+        let portals = [
+            ("climate.local", "climate.local", "192.168.0.226"),
+            ("flip-clock.local", "", "192.168.0.220"),
+            ("pixel.local", "Pixel Pet", "192.168.0.243"),
+            ("shorty.local", "", "192.168.0.101"),
+            ("solly.local", "", "192.168.0.199"),
+            ("8x8.local", "Eight", "192.168.0.188"),
+            ("monster.local", "", "192.168.0.148"),
+            ("homeassistant.local", "", "192.168.0.45"),
+            ("sidecoffee-dial.local", "", "192.168.0.90"),
+        ]
+        var probes = portals.map { host, title, ip in
+            PortProbe(host: host, port: 80, up: true, htmlTitle: title, address: ip)
+        }
+        probes.append(PortProbe(host: "homeassistant.local", port: 8123, up: true, address: "192.168.0.45"))
+        for host in ["bedside-dial.local", "led-round-dial.local", "printstatus.local", "p1s-tft.local", "stash-buddy.local", "staufenplatz-eink.local"] {
+            probes.append(PortProbe(host: host, port: 80, up: false))
+        }
+
+        let plan = LanClassify.probePlan(sightings)
+        #expect(plan.contains { $0.host == "monster.local" && $0.port == 80 })
+        #expect(plan.contains { $0.host == "8x8.local" && $0.port == 80 })
+        #expect(plan.contains { $0.host == "sidecoffee-dial.local" && $0.port == 80 })
+        #expect(plan.filter { $0.host == "flip-clock.local" }.count == 2)
+        #expect(!plan.contains { $0.host == "cam.local" })
+
+        let cards = LanClassify.cards(sightings: sightings, probes: probes)
+        func found(_ host: String) -> BoardItem? { cards.first { $0.host == host } }
+        #expect(cards.filter { $0.host == "flip-clock.local" }.count == 1)
+        #expect(cards.contains { $0.host == "cam.local" } == false)
+        #expect(found("climate.local")?.title == "climate.local")
+        #expect(found("climate.local")?.openable == true)
+        #expect(found("climate.local")?.url == "http://climate.local")
+        #expect(found("pixel.local")?.title == "Pixel Pet")
+        #expect(found("8x8.local")?.title == "Eight")
+        #expect(found("8x8.local")?.port == 80)
+        #expect(found("shorty.local")?.title == "Shorty")
+        #expect(found("solly.local")?.title == "Solly")
+        #expect(found("monster.local")?.title == "Monster Settings")
+        #expect(found("monster.local")?.openable == true)
+        #expect(cards.filter { $0.host == "homeassistant.local" }.count == 1)
+        #expect(found("homeassistant.local")?.title == "Home Assistant")
+        #expect(found("homeassistant.local")?.port == 80)
+        #expect(found("sidecoffee-dial.local")?.openable == true)
+        #expect(found("sidecoffee-dial.local")?.url == "http://sidecoffee-dial.local")
+        for host in ["bedside-dial.local", "led-round-dial.local", "printstatus.local", "p1s-tft.local", "stash-buddy.local", "staufenplatz-eink.local"] {
+            #expect(found(host)?.openable == false)
+            #expect(found(host)?.url.isEmpty == true)
+        }
+        #expect(found("led-round-dial.local")?.label == "ESPHome")
+        #expect(found("p1s-tft.local")?.label == "Arduino OTA")
+
+        let seeds = HostTitles.mergeSeedHosts()
+        #expect(seeds.contains("flip-clock.local"))
+        #expect(seeds.contains("bedside-dial.local"))
+        #expect(seeds.contains("printstatus.local"))
+        let jobs = BoardMerge.probeJobs(local: [], lan: [], seeds: seeds)
+        #expect(jobs.contains { $0.host == "monster.local" && $0.port == 80 })
+        #expect(jobs.contains { $0.host == "sidecoffee-dial.local" && $0.port == 80 })
+        #expect(HostTitles.knownAddresses["climate.local"] == "192.168.0.226")
+        #expect(HostTitles.knownAddresses["8x8.local"] == "192.168.0.188")
+    }
+
     private func running(_ title: String, port: Int, cwd: String = "", command: String = "", args: [String] = [], agent: String = "") -> BoardItem {
         item(title: title, url: "http://localhost:\(port)", host: "localhost", port: port, source: "local", pid: 42, cwd: cwd, command: command, args: args, launchAgent: agent)
     }
