@@ -1,27 +1,15 @@
 import AppKit
 import DevServersCore
 
-/// Right-click (or Control-click) menu for the menu bar icon. MenuBarExtra has
-/// no API for one, so watch for secondary clicks on its status bar button.
+/// Right-click (or Control-click) menu for the status button. The button sends
+/// leftMouseUp and rightMouseUp; this does not install an event monitor.
 @MainActor
 enum StatusItemMenu {
-    private static var eventMonitor: Any?
-
-    static func install(monitor: ServerMonitor, openSettings: @escaping () -> Void) {
-        guard eventMonitor == nil else { return }
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.rightMouseDown, .leftMouseDown]) { event in
-            let secondary = event.type == .rightMouseDown || event.modifierFlags.contains(.control)
-            guard secondary, let button = StatusItemOpener.findButton(in: event.window?.contentView) else { return event }
-            show(from: button, monitor: monitor, openSettings: openSettings)
-            return nil
-        }
-    }
-
-    private static func show(from button: NSStatusBarButton, monitor: ServerMonitor, openSettings: @escaping () -> Void) {
+    static func show(from button: NSStatusBarButton, monitor: ServerMonitor, openPopover: @escaping () -> Void, openSettings: @escaping () -> Void) {
         let menu = NSMenu()
         menu.autoenablesItems = false
 
-        menu.addItem(ActionItem(L10n.text("Open Dev Servers")) { StatusItemOpener.open() })
+        menu.addItem(ActionItem(L10n.text("Open Dev Servers"), action: openPopover))
 
         let browser = NSMenuItem(title: L10n.text("Open in Browser"), action: nil, keyEquivalent: "")
         let servers = NSMenu()

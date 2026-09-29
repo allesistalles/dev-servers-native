@@ -140,3 +140,24 @@ enum MenuBarIcon {
         return image
     }
 }
+
+/// Which glyph and count the status button shows. MenuBarIcon draws the pixels.
+enum MenuBarLabel {
+    static func image(count: Int, style: Preferences.IconStyle) -> NSImage {
+        let (glyph, label) = glyphAndCount(count: count, style: style)
+        return MenuBarIcon.image(glyph: glyph, count: label)
+    }
+
+    static func accessibilityLabel(count: Int) -> String {
+        count == 0 ? L10n.text("Dev Servers, no servers") : L10n.format("Dev Servers, %d servers", count)
+    }
+
+    private static func glyphAndCount(count: Int, style: Preferences.IconStyle) -> (DotGlyph, Int?) {
+        if count == 0 { return (.colon, nil) }
+        switch style {
+        case .colon: return (.colon, nil)
+        case .colonCount: return (.colon, count)
+        case .count: return DotGlyph.digit(count).map { ($0, nil) } ?? (.colon, count)
+        }
+    }
+}

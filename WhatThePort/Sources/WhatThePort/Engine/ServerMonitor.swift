@@ -141,8 +141,12 @@ final class ServerMonitor: ObservableObject {
 
     // MARK: - Actions
 
+    /// Runs on the main actor before a browser is launched, so the popover can close first.
+    var onWillOpen: (@MainActor () -> Void)?
+
     func open(_ item: BoardItem) {
         guard CardActions.canOpen(item), let url = URL(string: item.url) else { return }
+        onWillOpen?()
         NSWorkspace.shared.open(url)
     }
 
