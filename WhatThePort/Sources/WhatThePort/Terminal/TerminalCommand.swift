@@ -4,7 +4,7 @@ import Foundation
 /// `wtp`, the command-line side of the app. The app's executable runs it when
 /// invoked through a symlink named `wtp`, or with `--tui`.
 enum TerminalCommand {
-    private static let appIdentifier = "com.whattheport.app"
+    static let appIdentifier = "com.whattheport.app"
 
     static var isRequested: Bool {
         let name = CommandLine.arguments.first.map { ($0 as NSString).lastPathComponent }
@@ -24,6 +24,8 @@ enum TerminalCommand {
         case nil:
             guard isatty(STDIN_FILENO) == 1, isatty(STDOUT_FILENO) == 1 else { list(json: false) }
             TerminalApp.run()
+        case "language":
+            configureLanguage(Array(arguments.dropFirst()))
         case "list", "ls":
             list(json: arguments.contains("--json"))
         case "--json":
@@ -48,9 +50,31 @@ enum TerminalCommand {
       wtp list          Print servers and exit
       wtp list --json   Print servers as JSON
       wtp --version     Print the version
+      wtp language      Show the macOS app language
+      wtp language de   Set the app language (system, en, de, fr, es, zh-Hans, he, ja, uk)
+
+    The terminal interface and JSON remain English. App language changes apply immediately.
 
     Press ? in wtp for keys. Settings are shared with the WhatThePort menu bar app.
     """
+
+    static var appLanguage: InterfaceLanguage {
+        let defaults = UserDefaults(suiteName: appIdentifier)!
+        return defaults.string(forKey: Preferences.language).flatMap(InterfaceLanguage.init(rawValue:)) ?? .system
+    }
+
+    private static func configureLanguage(_ arguments: [String]) -> Never {
+        guard arguments.count <= 1,
+              arguments.first == nil || InterfaceLanguage(rawValue: arguments[0]) != nil else {
+            fputs("wtp: language must be one of system, en, de, fr, es, zh-Hans, he, ja, uk\n", stderr)
+            exit(64)
+        }
+        if let value = arguments.first {
+            UserDefaults(suiteName: appIdentifier)?.set(value, forKey: Preferences.language)
+        }
+        print("App language: \(appLanguage.rawValue) (\(appLanguage.label))")
+        exit(0)
+    }
 
     /// Bundle.main doesn't follow the `wtp` symlink, so find the app from the real executable.
     private static var version: String {

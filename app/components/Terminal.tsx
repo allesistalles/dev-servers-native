@@ -3,6 +3,7 @@
 import { type KeyboardEvent, type PointerEvent, type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 import styles from './landing.module.css'
 import { AMBER } from './icons'
+import { APP_LANGUAGES, appLanguageLabel, type AppLanguageCode } from './languages'
 import {
   SERVERS,
   OTHER_MEMORY,
@@ -187,11 +188,19 @@ function table(ports: string[]): Output[] {
   return [{ text: format(header), tone: 'dim' }, ...rows.map((row) => ({ text: format(row) }))]
 }
 
-function reply(input: string, ports: string[]): { lines: Output[]; action?: 'wtp' | 'clear' | 'exit' } {
+function reply(input: string, ports: string[], language: AppLanguageCode): { lines: Output[]; action?: 'wtp' | 'clear' | 'exit'; language?: AppLanguageCode } {
   const command = input.trim()
   const [name, ...args] = command.split(/\s+/)
   const arg = args.join(' ')
   if (!command) return { lines: [] }
+  if (name === 'wtp' && args[0] === 'language') {
+    const code = args[1] ?? language
+    if (args.length > 2 || (code !== 'system' && !APP_LANGUAGES.some((item) => item.code === code))) {
+      return { lines: [{ text: 'wtp: language must be one of system, en, de, fr, es, zh-Hans, he, ja, uk' }] }
+    }
+    const selected = code as AppLanguageCode
+    return { lines: [{ text: `App language: ${selected} (${appLanguageLabel(selected)})` }], language: selected }
+  }
   if (command === 'wtp') return { lines: [], action: 'wtp' }
   if (/^wtp (list|ls)$/.test(command)) return { lines: table(ports) }
   if (/^wtp (list|ls) --json$/.test(command)) {
@@ -213,6 +222,10 @@ function reply(input: string, ports: string[]): { lines: Output[]; action?: 'wtp
         '  wtp               Browse, open and stop servers',
         '  wtp list          Print servers and exit',
         '  wtp list --json   Print servers as JSON',
+        '  wtp language      Show the macOS app language',
+        '  wtp language de   Set the app language',
+        '  Codes: system, en, de, fr, es, zh-Hans, he, ja, uk',
+        'The terminal interface and JSON remain English.',
       ].map((text) => ({ text })),
     }
   }
@@ -343,6 +356,7 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
   const [closed, setClosed] = useState(false)
 
   // Shell
+  const [appLanguage, setAppLanguage] = useState<AppLanguageCode>('system')
   const [mode, setMode] = useState<'shell' | 'tui' | 'ended'>('shell')
   const [lines, setLines] = useState<ShellLine[]>([])
   const [input, setInput] = useState('')
@@ -636,7 +650,8 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
   }
 
   const run = (command: string) => {
-    const result = reply(command, running)
+    const result = reply(command, running, appLanguage)
+    if (result.language) setAppLanguage(result.language)
     if (command.trim()) setPast((current) => [...current, command])
     setRecall(null)
     setInput('')
@@ -1100,7 +1115,11 @@ export function TerminalWindow({ visible = true, desktop = false }: { visible?: 
       ['Details', [['⏎', 'Open in browser'], ['space', 'Actions'], ['i', 'More or less info'], ['p', 'Show or hide processes'], ['tab', 'Next server'], ['esc', 'Back']]],
       ['Anywhere', [['?', 'Keys'], ['esc', 'Back, or quit from the list'], ['q', 'Quit']]],
     ]
-    const content: ReactNode[] = []
+    const content: ReactNode[] = [
+      blank('language-gap'),
+      <Line key="app-language"><T2>App language: {appLanguageLabel(appLanguage)}</T2></Line>,
+      <Line key="language-help"><T3>wtp language &lt;code&gt; · terminal text stays English</T3></Line>,
+    ]
     groups.forEach(([title, keys]) => {
       content.push(
         blank(`h-${title}`),

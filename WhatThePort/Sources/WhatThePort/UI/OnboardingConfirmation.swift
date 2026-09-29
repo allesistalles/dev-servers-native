@@ -38,16 +38,16 @@ struct OnboardingConfirmation: View {
         HStack(spacing: 12) {
             Group {
                 if case .action(_, let button) = state {
-                    Button(button, action: action)
+                    Button(L10n.text(button), action: action)
                         .buttonStyle(PillButtonStyle())
-                        .accessibilityLabel("\(button) — \(state.label)")
+                        .accessibilityLabel("\(L10n.text(button)) — \(L10n.text(state.label))")
                 } else {
-                    Text(state.label)
+                    Text(L10n.text(state.label))
                         .font(monospaced && state.isSuccess ? OnboardingStyle.evidence : OnboardingStyle.label)
                         .foregroundStyle(OnboardingStyle.secondary)
                 }
             }
-            .frame(width: 92, alignment: .trailing)
+            .frame(width: L10n.language == .english ? 92 : 140, alignment: .trailing)
             OnboardingStatusMark(state: state)
         }
         .fixedSize()
@@ -92,6 +92,6 @@ struct OnboardingStatusMark: View {
             try? await Task.sleep(for: .seconds(Flicker.frameInterval / 2))
             if !Task.isCancelled { drawn += 1 }
         }
-        .accessibilityLabel(state.isLoading ? state.label : state.isSuccess ? "Confirmed" : state.label)
+        .accessibilityLabel(state.isLoading ? L10n.text(state.label) : state.isSuccess ? L10n.text("Confirmed") : L10n.text(state.label))
     }
 }

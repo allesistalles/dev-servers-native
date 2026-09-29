@@ -10,9 +10,11 @@ export const SECTIONS = [
   { id: 'leaks', menu: 'Leaks', scene: 'home-office', logo: 'light' },
   { id: 'clean-up', menu: 'Clean up', scene: 'coworking', logo: 'light' },
   { id: 'terminal', menu: 'Terminal', scene: 'tech-office', logo: 'light' },
+  { id: 'translations', menu: 'Languages', scene: 'japanese-cafe', wallpaper: 'coffee-shop', logo: 'light' },
   { id: 'get-it', menu: 'Download', scene: 'corporate-office', logo: 'light' },
 ] as const
 
 export const LEAKS = 2
 export const TERMINAL = 4
+export const TRANSLATIONS = 5
 export const GET_IT = SECTIONS.length - 1

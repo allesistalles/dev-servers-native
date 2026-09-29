@@ -8,8 +8,9 @@ import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { DotGrid } from './icons'
 import { Screen } from './Screen'
-import { DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS, TERMINAL } from './sections'
+import { DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS, TERMINAL, TRANSLATIONS } from './sections'
 import { TerminalWindow } from './Terminal'
+import { Translations } from './Translations'
 
 // Scene geometry, in the 2560×1600 space the room photos and laptop were composed in (Paper boards 22–26).
 const SCENE = { width: 2560, height: 1600 }
@@ -207,10 +208,12 @@ function StackedPage({ stars }: { stars: number | null }) {
           <div
             ref={index === 0 ? cardRef : undefined}
             className={styles.peek}
-            style={{ backgroundImage: `linear-gradient(#05080c33, #05080c33), url(/wallpapers/${section.scene}.jpg)` }}
+            style={{ backgroundImage: `linear-gradient(#05080c33, #05080c33), url(/${index === TRANSLATIONS ? 'scenes' : 'wallpapers'}/${section.scene}.jpg)` }}
           >
             {index === GET_IT ? (
               <DotMatrix size={160} />
+            ) : index === TRANSLATIONS ? (
+              <Translations />
             ) : index === TERMINAL ? (
               <div style={{ zoom: Math.min(1, zoom * (400 / 500)) }}>
                 <TerminalWindow />

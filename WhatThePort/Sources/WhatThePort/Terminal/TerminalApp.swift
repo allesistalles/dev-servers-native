@@ -1181,6 +1181,9 @@ final class TerminalApp {
             ("Anywhere", [("?", "Keys"), ("esc", "Back, or quit from the list"), ("ctrl-l", "Redraw"), ("q", "Quit")]),
         ]
         var block = Block()
+        block.add([])
+        block.add(padded([Span("App language: " + TerminalCommand.appLanguage.label, palette.text2)]))
+        block.add(padded([Span("wtp language <code> · terminal text stays English", palette.text3)]))
         for (title, keys) in groups {
             block.add([])
             block.add(padded([Span(title, palette.text2)]))

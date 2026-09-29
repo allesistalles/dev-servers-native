@@ -25,18 +25,17 @@ enum SnapshotRenderer {
             pages.insert(("detail", .detail(port: first.port), false), at: 1)
         }
         for (name, route, cleaning) in pages {
-            let view = PopoverRoot(monitor: monitor, route: route, startCleaning: cleaning)
+            // Render the same page at the popover's width without its menu-bar
+            // window fitter, which would resize away the snapshot padding.
+            let view = snapshotPage(monitor: monitor, route: route, cleaning: cleaning)
+                .frame(width: Theme.popoverWidth)
                 .background(Theme.popoverBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .padding(20)
                 .background(Theme.snapshotBackground)
                 .environment(\.colorScheme, scheme)
-            let renderer = ImageRenderer(content: view)
-            renderer.scale = 2
-            if let image = renderer.nsImage, let tiff = image.tiffRepresentation,
-               let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
-                try? png.write(to: output.appendingPathComponent("\(name).png"))
-            }
+            let size = NSHostingView(rootView: view).fittingSize
+            renderWindow(view, size: size, to: output.appendingPathComponent("\(name).png"))
         }
 
         for pane in SettingsPane.allCases {
@@ -69,6 +68,17 @@ enum SnapshotRenderer {
         exit(0)
     }
 
+    @ViewBuilder private static func snapshotPage(monitor: ServerMonitor, route: PopoverRoute, cleaning: Bool) -> some View {
+        switch route {
+        case .servers:
+            ServersView(monitor: monitor, startCleaning: cleaning, openServer: { _ in }, openSettings: {})
+        case .detail(let port):
+            if let server = monitor.server(port: port) {
+                ServerDetailView(server: server, monitor: monitor, back: {})
+            }
+        }
+    }
+
     /// Deterministic onboarding samples. These services never request real
     /// notification permission, alter login items, or change preferences.
     static func runOnboarding(monitor: ServerMonitor, directory: String) {
@@ -84,6 +94,8 @@ enum SnapshotRenderer {
             ("setup-confirmed", .leaks, .authorized, .enabled),
             ("setup-approval", .leaks, .denied, .requiresApproval),
         ]
+        renderWindow(OnboardingView(monitor: monitor), size: CGSize(width: 480, height: 620),
+                     to: output.appendingPathComponent("welcome.png"))
         for (name, step, authorization, login) in samples {
             let services = OnboardingServices(
                 detect: { tool in
@@ -115,6 +127,13 @@ enum SnapshotRenderer {
     }
 
     private static func configureAppearance() {
+        // Display the overridden language in pickers without persisting it.
+        if let index = CommandLine.arguments.firstIndex(of: "--ui-language"),
+           let value = CommandLine.arguments.dropFirst(index + 1).first {
+            var domain = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+            domain[Preferences.language] = value
+            UserDefaults.standard.setVolatileDomain(domain, forName: UserDefaults.argumentDomain)
+        }
         // Override only this snapshot process; never change the Mac's appearance.
         if let index = CommandLine.arguments.firstIndex(of: "--appearance"),
            let value = CommandLine.arguments.dropFirst(index + 1).first {
@@ -129,7 +148,7 @@ enum SnapshotRenderer {
     /// AppKit-backed controls (toggles, pickers, forms) don't draw in
     /// ImageRenderer, so render them in a real off-screen window instead.
     static func renderWindow<V: View>(_ view: V, size: CGSize, to url: URL) {
-        let host = NSHostingView(rootView: view)
+        let host = NSHostingView(rootView: LocalizedView { view })
         let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
         window.appearance = NSApp.effectiveAppearance
         window.contentView = host

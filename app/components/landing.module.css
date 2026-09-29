@@ -1878,3 +1878,57 @@
 .processRow > span:last-child { width: 70px; flex-shrink: 0; text-align: right; }
 
 .emptyState { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 0; }
+
+/* Actual native onboarding previews, shared by desktop and mobile. */
+.translations {
+  width: min(340px, calc(100% - 32px));
+  margin: 24px auto;
+  color: #f5f5f7;
+}
+.translations[hidden] { display: none; }
+.translations figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.translations select {
+  min-width: 130px;
+  max-width: 54%;
+  padding: 7px 10px;
+  border: 1px solid #ffffff30;
+  border-radius: 7px;
+  background: #28282b;
+  color: #f5f5f7;
+  font: inherit;
+}
+.translations img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 13px;
+  box-shadow: 0 16px 48px #0005;
+}
+.translationsDesktop {
+  position: absolute;
+  top: 68px;
+  right: 26px;
+  width: 370px;
+  margin: 0;
+  z-index: 2;
+}
+
+.languageHeadline { min-height: 2.2em; }
+.languageHeadline span {
+  display: inline-block;
+  animation: language-appear 350ms ease both;
+}
+@keyframes language-appear {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .languageHeadline span { animation: none; }
+}

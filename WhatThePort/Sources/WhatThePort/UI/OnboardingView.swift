@@ -44,6 +44,7 @@ struct OnboardingView: View {
     var usageOnly = false
     var close: () -> Void = {}
 
+    @AppStorage(Preferences.language) private var language = InterfaceLanguage.system.rawValue
     @AppStorage(Preferences.onboarded) private var onboarded = false
     @AppStorage(Preferences.vercelPreviews) private var previews = false
     @AppStorage(Preferences.shareUsage) private var shareUsage = true
@@ -57,23 +58,27 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            VStack(spacing: 20) {
-                DotMatrixView(glyph: heroGlyph)
-                    .frame(height: 120)
-                VStack(spacing: 8) {
-                    Text(title).font(Theme.displaySans).foregroundStyle(Theme.text1)
-                    Text(message)
-                        .font(Theme.body)
-                        .foregroundStyle(OnboardingStyle.secondary)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                        .fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                VStack(spacing: 20) {
+                    DotMatrixView(glyph: heroGlyph)
+                        .frame(height: 120)
+                    VStack(spacing: 8) {
+                        Text(title).font(Theme.displaySans).foregroundStyle(Theme.text1)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Text(message)
+                            .font(Theme.body)
+                            .foregroundStyle(OnboardingStyle.secondary)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    card
+                    Spacer(minLength: 0)
                 }
-                card
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity)
+                .padding(EdgeInsets(top: 36, leading: 32, bottom: 20, trailing: 32))
             }
-            .padding(EdgeInsets(top: 36, leading: 32, bottom: 20, trailing: 32))
-
             SectionDivider()
             HStack {
                 if !usageOnly {
@@ -102,24 +107,24 @@ struct OnboardingView: View {
     private var title: String {
         switch step {
         case .welcome: return "WhatThePort"
-        case .leaks: return "Stay ahead of leaks"
-        case .tools: return "Your tools, at a glance."
-        case .vercel: return "Vercel previews"
-        case .terminal: return "WTP TUI"
-        case .usage: return "Help shape WhatThePort"
-        case .done: return "You’re set"
+        case .leaks: return L10n.text("Stay ahead of leaks")
+        case .tools: return L10n.text("Your tools, at a glance.")
+        case .vercel: return L10n.text("Vercel previews")
+        case .terminal: return L10n.text("WTP TUI")
+        case .usage: return L10n.text("Help shape WhatThePort")
+        case .done: return L10n.text("You’re set")
         }
     }
 
     private var message: String {
         switch step {
-        case .welcome: return "Every dev server on your Mac, in the menu bar. What it is, what branch it’s on, and what it’s costing you."
-        case .leaks: return "WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac."
-        case .tools: return "WhatThePort reads local session files and process info to put your servers in context."
-        case .vercel: return "See the preview deployment for whatever branch each server is running. Optional."
-        case .terminal: return "Type wtp in any terminal to browse, open and stop your servers, with the same details and Clean up. Optional."
-        case .usage: return "Share which features you use, once a day. Nothing about your servers, projects or Mac is included."
-        case .done: return "The dots settle into the colon in your menu bar. Press ⌥⌘P any time to open it."
+        case .welcome: return L10n.text("Every dev server on your Mac, in the menu bar. What it is, what branch it’s on, and what it’s costing you.")
+        case .leaks: return L10n.text("WhatThePort warns you when a server starts eating memory. Nothing about your servers leaves your Mac.")
+        case .tools: return L10n.text("WhatThePort reads local session files and process info to put your servers in context.")
+        case .vercel: return L10n.text("See the preview deployment for whatever branch each server is running. Optional.")
+        case .terminal: return L10n.text("Type wtp in any terminal to browse, open and stop your servers, with the same details and Clean up. Optional.")
+        case .usage: return L10n.text("Share which features you use, once a day. Nothing about your servers, projects or Mac is included.")
+        case .done: return L10n.text("The dots settle into the colon in your menu bar. Press ⌥⌘P any time to open it.")
         }
     }
 
@@ -129,21 +134,30 @@ struct OnboardingView: View {
         switch step {
         case .welcome:
             OnboardingCard {
-                OnboardingRow(title: monitor.servers.isEmpty ? "No servers running right now" : "Found \(monitor.servers.count) \(monitor.servers.count == 1 ? "server" : "servers") running") {
+                OnboardingRow(title: L10n.text("Language")) {
+                    Picker(L10n.text("Language"), selection: $language) {
+                        ForEach(InterfaceLanguage.allCases, id: \.rawValue) { Text($0.label).tag($0.rawValue) }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: 210)
+                }
+                RowDivider()
+                OnboardingRow(title: monitor.servers.isEmpty ? L10n.text("No servers running right now") : L10n.format("Found %d %@ running", monitor.servers.count, L10n.counted("server", "servers", count: monitor.servers.count))) {
                     Text(monitor.servers.prefix(3).map { ":\($0.port)" }.joined(separator: " ") + (monitor.servers.count > 3 ? " …" : ""))
                         .font(Theme.mono).foregroundStyle(Theme.text2)
+                        .environment(\.layoutDirection, .leftToRight)
                 }
             }
         case .leaks:
             VStack(spacing: 18) {
                 OnboardingCard {
-                    OnboardingSummary(title: status.setupSummary, detail: "\(status.readyCount) of 2 ready")
+                    OnboardingSummary(title: status.setupSummary, detail: L10n.format("%d of 2 ready", status.readyCount))
                     RowDivider()
-                    OnboardingRow(title: "Notifications", caption: status.notifications == .action("Not allowed", button: "Settings…") ? "Allow in System Settings" : "Memory and leak alerts") {
+                    OnboardingRow(title: L10n.text("Notifications"), caption: status.notifications == .action("Not allowed", button: "Settings…") ? L10n.text("Allow in System Settings") : L10n.text("Memory and leak alerts")) {
                         OnboardingConfirmation(state: status.notifications, action: notificationAction)
                     }
                     RowDivider()
-                    OnboardingRow(title: "Launch at login", caption: status.login == .action("Needs approval", button: "Settings…") ? "Approve in System Settings" : "Opens when you sign in") {
+                    OnboardingRow(title: L10n.text("Launch at login"), caption: status.login == .action("Needs approval", button: "Settings…") ? L10n.text("Approve in System Settings") : L10n.text("Opens when you sign in")) {
                         OnboardingConfirmation(state: status.login, action: loginAction)
                     }
                 }
@@ -151,26 +165,26 @@ struct OnboardingView: View {
                     Text(error).font(OnboardingStyle.label).foregroundStyle(Theme.amber)
                         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 }
-                Button("You can change these in Settings.") { openWindow(id: "settings") }
+                Button(L10n.text("You can change these in Settings.")) { openWindow(id: "settings") }
                     .buttonStyle(.plain).font(OnboardingStyle.label).foregroundStyle(OnboardingStyle.secondary)
             }
         case .tools:
             OnboardingCard {
                 OnboardingSummary(
-                    title: status.isScanning ? "Checking this Mac…" : "\(status.detectedCount) \(status.detectedCount == 1 ? "tool" : "tools") detected",
-                    detail: status.isScanning ? "\(status.detectedCount) of 4 found" : "Scan complete"
+                    title: status.isScanning ? L10n.text("Checking this Mac…") : L10n.format("%d %@ detected", status.detectedCount, L10n.counted("tool", "tools", count: status.detectedCount)),
+                    detail: status.isScanning ? L10n.format("%d of 4 found", status.detectedCount) : L10n.text("Scan complete")
                 )
                 ForEach(OnboardingTool.allCases, id: \.self) { tool in
                     RowDivider()
                     OnboardingRow(title: tool.name, icon: AnyView(toolIcon(tool))) {
-                        OnboardingConfirmation(state: status.tools[tool] ?? .loading("Checking…"), monospaced: true)
+                        OnboardingConfirmation(state: status.tools[tool] ?? .loading(L10n.text("Checking…")), monospaced: true)
                     }
                 }
             }
         case .vercel:
             OnboardingCard {
-                OnboardingRow(title: "Show preview buttons",
-                              caption: GitHubLookup.isAvailable ? "Uses Vercel’s GitHub deployments through gh" : "Needs the GitHub CLI (gh)") {
+                OnboardingRow(title: L10n.text("Show preview buttons"),
+                              caption: GitHubLookup.isAvailable ? L10n.text("Uses Vercel’s GitHub deployments through gh") : L10n.text("Needs the GitHub CLI (gh)")) {
                     Toggle("", isOn: $previews).labelsHidden().toggleStyle(.switch)
                 }
                 .disabled(!GitHubLookup.isAvailable)
@@ -178,7 +192,7 @@ struct OnboardingView: View {
         case .terminal:
             VStack(spacing: 18) {
                 OnboardingCard {
-                    OnboardingRow(title: "wtp command", caption: commandCaption, icon: AnyView(ToolIcon(systemName: "terminal"))) {
+                    OnboardingRow(title: L10n.text("wtp command"), caption: commandCaption, icon: AnyView(ToolIcon(systemName: "terminal"))) {
                         OnboardingConfirmation(state: commandState, monospaced: true) {
                             commandError = CommandLineTool.install()
                             command = CommandLineTool.state
@@ -189,24 +203,24 @@ struct OnboardingView: View {
                     Text(commandError).font(OnboardingStyle.label).foregroundStyle(Theme.amber)
                         .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                 }
-                Button("You can remove it in Settings.") { openWindow(id: "settings") }
+                Button(L10n.text("You can remove it in Settings.")) { openWindow(id: "settings") }
                     .buttonStyle(.plain).font(OnboardingStyle.label).foregroundStyle(OnboardingStyle.secondary)
             }
         case .usage:
             VStack(spacing: 18) {
                 OnboardingCard {
-                    OnboardingRow(title: "Share anonymous usage", caption: "Feature names only, like Clean up or Stop") {
+                    OnboardingRow(title: L10n.text("Share anonymous usage"), caption: L10n.text("Feature names only, like Clean up or Stop")) {
                         Toggle("", isOn: Binding(get: { shareUsage }, set: Usage.setSharing)).labelsHidden().toggleStyle(.switch)
                     }
                 }
-                Button("See exactly what’s sent. You can change this in Settings.") {
+                Button(L10n.text("See exactly what’s sent. You can change this in Settings.")) {
                     NSWorkspace.shared.open(URL(string: FeedbackLink.repository + "#privacy")!)
                 }
                 .buttonStyle(.plain).font(OnboardingStyle.label).foregroundStyle(OnboardingStyle.secondary)
             }
         case .done:
             OnboardingCard {
-                OnboardingRow(title: "Alert when a server uses more than") {
+                OnboardingRow(title: L10n.text("Alert when a server uses more than")) {
                     HStack(spacing: 6) {
                         TextField("", value: $thresholdGB, format: .number.precision(.fractionLength(0...1)))
                             .textFieldStyle(.roundedBorder).font(Theme.mono).multilineTextAlignment(.trailing).frame(width: 48)
@@ -214,9 +228,9 @@ struct OnboardingView: View {
                     }
                 }
                 RowDivider()
-                OnboardingRow(title: "Suggest cleaning up idle servers after") {
+                OnboardingRow(title: L10n.text("Suggest cleaning up idle servers after")) {
                     Picker("", selection: $idleHours) {
-                        ForEach([1, 2, 4, 8, 24], id: \.self) { Text("\($0)h").tag($0) }
+                        ForEach([1, 2, 4, 8, 24], id: \.self) { Text(L10n.format("%dh", $0)).tag($0) }
                     }
                     .labelsHidden()
                     .fixedSize()
@@ -245,10 +259,10 @@ struct OnboardingView: View {
 
     private var commandCaption: String {
         switch command {
-        case .installed: return "Ready in new terminal windows"
-        case .notInstalled: return "Adds \(CommandLineTool.linkPath)"
-        case .other: return "\(CommandLineTool.linkPath) is already something else"
-        case .unavailable: return "Move WhatThePort to Applications first"
+        case .installed: return L10n.text("Ready in new terminal windows")
+        case .notInstalled: return L10n.format("Adds %@", CommandLineTool.linkPath)
+        case .other: return L10n.format("%@ is already something else", CommandLineTool.linkPath)
+        case .unavailable: return L10n.text("Move WhatThePort to Applications first")
         }
     }
 
@@ -284,18 +298,18 @@ struct OnboardingView: View {
     @ViewBuilder private var actions: some View {
         switch step {
         case .welcome:
-            Button("Get started") { go(.leaks) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
+            Button(L10n.text("Get started")) { go(.leaks) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         case .vercel:
-            Button("Back") { go(.tools) }.buttonStyle(PillButtonStyle())
-            Button("Skip") { previews = false; go(.terminal) }.buttonStyle(PillButtonStyle())
-            Button("Continue") { go(.terminal) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
+            Button(L10n.text("Back")) { go(.tools) }.buttonStyle(PillButtonStyle())
+            Button(L10n.text("Skip")) { previews = false; go(.terminal) }.buttonStyle(PillButtonStyle())
+            Button(L10n.text("Continue")) { go(.terminal) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         case .usage where usageOnly:
-            Button("Done") { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
+            Button(L10n.text("Done")) { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         case .done:
-            Button("Open WhatThePort") { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
+            Button(L10n.text("Open WhatThePort")) { finish() }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         default:
-            Button("Back") { go(OnboardingStep(rawValue: step.rawValue - 1) ?? .welcome) }.buttonStyle(PillButtonStyle())
-            Button("Continue") { go(OnboardingStep(rawValue: step.rawValue + 1) ?? .done) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
+            Button(L10n.text("Back")) { go(OnboardingStep(rawValue: step.rawValue - 1) ?? .welcome) }.buttonStyle(PillButtonStyle())
+            Button(L10n.text("Continue")) { go(OnboardingStep(rawValue: step.rawValue + 1) ?? .done) }.buttonStyle(PillButtonStyle(kind: .primary)).keyboardShortcut(.defaultAction)
         }
     }
 
