@@ -20,12 +20,14 @@ final class ServerMonitor: ObservableObject {
     @Published private(set) var systemCPU: Double?
     /// Memory by app for everything that isn't a dev server, largest first.
     @Published private(set) var otherApps: [AppMemory] = []
-    @Published private(set) var serviceInventory = ServiceInventory.empty
+    @Published private(set) var board: [BoardItem] = []
+    @Published var actionError: String?
+    @Published var boardTab: BoardTab = .overview
     @Published var allowlist: Set<String> = ServerMonitor.defaultAllowlist
     /// Set from outside the popover (e.g. a notification's Details button).
     @Published var pendingRoute: PopoverRoute?
 
-    /// Off in the `wtp` terminal UI, so it never duplicates the menu bar app's
+    /// Off in snapshot mode, so it never duplicates the menu bar app's
     /// notifications or automatic clean up.
     var handlesAlerts = true
 
@@ -52,10 +54,10 @@ final class ServerMonitor: ObservableObject {
     private let appUsage = AppUsageScanner()
     private let cpuSampler = SystemCPUSampler()
     private let bonjour = BonjourBrowser()
-    private var probeCache: [ProbeResult] = []
-    private var probeAt = Date.distantPast
-    private var nameLookup: [String: Bool] = [:]
-    private var nameLookupAt: [String: Date] = [:]
+    private var remoteAt = Date.distantPast
+    private var remoteLan: [BoardItem] = []
+    private var remoteSeed: [BoardItem] = []
+    private var addressCache: [String: String] = [:]
     private let queue = DispatchQueue(label: "website.vibed.devservers.scan", qos: .utility)
     private var timer: Timer?
     private var timerInterval: TimeInterval = 0
@@ -129,16 +131,15 @@ final class ServerMonitor: ObservableObject {
         isScanning = true
         let config = scanConfig
         let services = bonjour.snapshot()
-        let cache = bonjour.ipv4Cache()
-        let lookups = nameLookup
-        let lookupAt = nameLookupAt
-        let probes = probeCache
-        let refreshProbes = Date().timeIntervalSince(probeAt) > 12 || probeCache.isEmpty
+        let refreshRemote = Date().timeIntervalSince(remoteAt) > 20 || remoteLan.isEmpty && remoteSeed.isEmpty
+        let cachedLan = remoteLan
+        let cachedSeed = remoteSeed
+        let addresses = addressCache.merging(bonjour.ipv4Cache()) { current, _ in current }
         queue.async { [engine, appUsage, cpuSampler] in
             let pass = Self.performScan(
                 engine: engine, appUsage: appUsage, cpuSampler: cpuSampler, config: config,
-                services: services, ipv4Cache: cache, lookups: lookups, lookupAt: lookupAt,
-                probes: probes, refreshProbes: refreshProbes
+                services: services, addresses: addresses, cachedLan: cachedLan, cachedSeed: cachedSeed,
+                refreshRemote: refreshRemote
             )
             Task { @MainActor in
                 self.apply(pass)
@@ -146,21 +147,18 @@ final class ServerMonitor: ObservableObject {
         }
     }
 
-    /// Runs a scan synchronously. Used by snapshot mode and `wtp list`.
+    /// Runs a scan synchronously. Used by snapshot mode.
     func scanNow() {
         bonjour.start()
         if bonjour.snapshot().isEmpty { usleep(1_000_000) }
         let config = scanConfig
         let services = bonjour.snapshot()
-        let cache = bonjour.ipv4Cache()
-        let lookups = nameLookup
-        let lookupAt = nameLookupAt
-        let probes = probeCache
+        let addresses = addressCache.merging(bonjour.ipv4Cache()) { current, _ in current }
         let pass = queue.sync {
             Self.performScan(
                 engine: engine, appUsage: appUsage, cpuSampler: cpuSampler, config: config,
-                services: services, ipv4Cache: cache, lookups: lookups, lookupAt: lookupAt,
-                probes: probes, refreshProbes: true
+                services: services, addresses: addresses, cachedLan: [], cachedSeed: [],
+                refreshRemote: true
             )
         }
         apply(pass)
@@ -168,11 +166,13 @@ final class ServerMonitor: ObservableObject {
 
     private func apply(_ pass: InventoryPass) {
         servers = pass.servers
-        serviceInventory = pass.inventory
-        probeCache = pass.probes
-        if pass.refreshedProbes { probeAt = Date() }
-        nameLookup = pass.lookups
-        nameLookupAt = pass.lookupAt
+        board = pass.board
+        if pass.refreshedRemote {
+            remoteAt = Date()
+            remoteLan = pass.lan
+            remoteSeed = pass.seed
+            addressCache = pass.addresses
+        }
         systemMemory = pass.system
         if let cpu = pass.cpu { systemCPU = cpu }
         otherApps = pass.apps
@@ -239,7 +239,6 @@ final class ServerMonitor: ObservableObject {
         case .ask:
             if notify { AlertCenter.shared.announceCleanUp(fresh.map(\.server), stopped: false) }
         case .automatic:
-            Usage.record(.autoCleanUp)
             fresh.forEach { stop($0.server) }
             if notify { AlertCenter.shared.announceCleanUp(fresh.map(\.server), stopped: true) }
         }
@@ -258,28 +257,46 @@ final class ServerMonitor: ObservableObject {
         ProcessControl.restart(server) { [weak self] _ in self?.scan() }
     }
 
-    func startHelper(_ helper: HelperRow) {
-        runLaunchPlan(helper.startPlan(uid: Int(getuid())), fallbackPIDs: [])
+    func open(_ item: BoardItem) {
+        guard CardActions.canOpen(item), let url = URL(string: item.url) else { return }
+        NSWorkspace.shared.open(url)
     }
 
-    func stopHelper(_ helper: HelperRow) {
-        runLaunchPlan(helper.stopPlan(uid: Int(getuid())), fallbackPIDs: helper.listenerPIDs)
-    }
-
-    func restartHelper(_ helper: HelperRow) {
-        runLaunchPlan(helper.restartPlan(uid: Int(getuid())), fallbackPIDs: helper.listenerPIDs)
-    }
-
-    func stopSidecar(_ sidecar: SidecarRow) {
-        runLaunchPlan(sidecar.stopPlan(uid: Int(getuid())), fallbackPIDs: sidecar.listenerPIDs)
-    }
-
-    private func runLaunchPlan(_ plan: LaunchControlPlan?, fallbackPIDs: [Int]) {
-        let uidPlan = plan
+    func kill(_ item: BoardItem) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let ok = uidPlan.map { LaunchAgentController.run($0) } ?? false
-            if !ok { LaunchAgentController.signal(fallbackPIDs) }
+            let error = BoardActions.kill(item)
             DispatchQueue.main.async {
+                self?.actionError = error
+                self?.scan()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self?.scan() }
+            }
+        }
+    }
+
+    func start(_ item: BoardItem) {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let error = BoardActions.start(item)
+            DispatchQueue.main.async {
+                self?.actionError = error
+                self?.scan()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self?.scan() }
+            }
+        }
+    }
+
+    func restart(_ item: BoardItem) {
+        guard CardActions.canRestart(item) else { return }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            if let error = BoardActions.kill(item) {
+                DispatchQueue.main.async { self?.actionError = error }
+                return
+            }
+            var down = item
+            down.pid = 0
+            down.status = "down"
+            let error = BoardActions.start(down)
+            DispatchQueue.main.async {
+                self?.actionError = error
                 self?.scan()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { self?.scan() }
             }
@@ -318,11 +335,11 @@ final class ServerMonitor: ObservableObject {
 
     private struct InventoryPass {
         var servers: [Server]
-        var inventory: ServiceInventory
-        var probes: [ProbeResult]
-        var refreshedProbes: Bool
-        var lookups: [String: Bool]
-        var lookupAt: [String: Date]
+        var board: [BoardItem]
+        var lan: [BoardItem]
+        var seed: [BoardItem]
+        var addresses: [String: String]
+        var refreshedRemote: Bool
         var system: SystemMemory?
         var cpu: Double?
         var apps: [AppMemory]
@@ -334,64 +351,90 @@ final class ServerMonitor: ObservableObject {
         cpuSampler: SystemCPUSampler,
         config: ScanConfig,
         services: [BonjourService],
-        ipv4Cache: [String: String],
-        lookups: [String: Bool],
-        lookupAt: [String: Date],
-        probes: [ProbeResult],
-        refreshProbes: Bool
+        addresses: [String: String],
+        cachedLan: [BoardItem],
+        cachedSeed: [BoardItem],
+        refreshRemote: Bool
     ) -> InventoryPass {
         let sockets = SocketScanner.scan()
         let result = engine.scan(config, sockets: sockets)
-        let agents = LaunchAgentController.load()
-
-        var nextLookups = lookups
-        var nextLookupAt = lookupAt
-        let now = Date()
-        var budget = 6
-        for host in PortalProbe.hostnames(bonjour: services) {
-            let stale = nextLookupAt[host].map { now.timeIntervalSince($0) > 30 } ?? true
-            guard stale, budget > 0 else { continue }
-            budget -= 1
-            nextLookups[host] = NameResolver.resolves(host)
-            nextLookupAt[host] = now
+        let home = NSHomeDirectory()
+        var locals = result.map { localServer(from: $0) }
+        locals.append(contentsOf: systemLocals(sockets))
+        let parsed = BoardDiscovery.agents(home: home)
+        for agent in parsed where agent.loaded {
+            guard let title = AgentFilter.sidecarTitle(label: agent.label, command: agent.args.first ?? "", args: agent.args, cwd: agent.cwd),
+                  !AgentFilter.looksHTTP(agent) else { continue }
+            locals.append(LocalServer(
+                url: "http://\(agent.label).sidecar:9",
+                cwd: agent.cwd,
+                command: agent.args.first ?? "",
+                args: Array(agent.args.dropFirst()),
+                kind: "sidecar",
+                title: title,
+                launchAgent: agent.label
+            ))
         }
-
-        var nextProbes = probes
-        if refreshProbes {
-            nextProbes = PortalProber.probe(PortalProbe.targets(bonjour: services, ipv4Cache: ipv4Cache))
+        let helpers = AgentFilter.mergeRegistries(KnownHelpers.all, parsed.compactMap { AgentFilter.helperFromLaunchAgent($0, home: home) })
+        var lan = cachedLan
+        var seed = cachedSeed
+        var nextAddresses = addresses
+        if refreshRemote {
+            let found = BoardDiscovery.discover(local: locals, bonjour: services, addressCache: addresses)
+            lan = found.lan
+            seed = found.seed
+            nextAddresses = found.cache
         }
-        let listeners = listeners(from: sockets, servers: result)
-        let inventory = InventoryBuilder.build(InventoryInput(
-            listeners: listeners,
-            launchAgents: agents,
-            bonjour: services,
-            probes: nextProbes,
-            nameLookup: nextLookups,
-            ipv4Cache: ipv4Cache
-        ))
-        let visible = result.filter { !inventory.hiddenPorts.contains($0.port) }
+        let board = BoardMerge.merge(local: locals, lan: lan, seed: seed, helpers: helpers)
+        let hidden = BoardMerge.hiddenPorts(in: board)
+        let visible = result.filter { !hidden.contains($0.port) }
         return InventoryPass(
             servers: visible,
-            inventory: inventory,
-            probes: nextProbes,
-            refreshedProbes: refreshProbes,
-            lookups: nextLookups,
-            lookupAt: nextLookupAt,
+            board: board,
+            lan: lan,
+            seed: seed,
+            addresses: nextAddresses,
+            refreshedRemote: refreshRemote,
             system: ProcessInspector.systemMemory(),
             cpu: cpuSampler.sample(),
             apps: appUsage.scan(excluding: Set(visible.flatMap { $0.processStarts.keys }))
         )
     }
 
-    private static func listeners(from sockets: SocketScan, servers: [Server]) -> [Listener] {
-        sockets.listening.map { socket in
-            let server = servers.first { $0.port == socket.port }
-            return Listener(
-                port: socket.port,
-                pid: Int(socket.pid),
-                processName: socket.command,
-                command: server?.command ?? socket.command,
-                cwd: server?.cwd
+    private static func localServer(from server: Server) -> LocalServer {
+        LocalServer(
+            url: server.url.absoluteString,
+            pid: Int(server.pid),
+            port: server.port,
+            project: server.project.name,
+            framework: server.project.framework ?? "",
+            cwd: server.cwd ?? "",
+            command: server.command ?? server.processName,
+            args: server.launch?.arguments ?? [],
+            title: server.project.name
+        )
+    }
+
+    private static func systemLocals(_ sockets: SocketScan) -> [LocalServer] {
+        var grouped: [String: (name: String, pid: Int, ports: Set<Int>)] = [:]
+        for socket in sockets.listening where SystemNoise.isSystemListener(socket.command) {
+            let key = socket.command.lowercased()
+            var entry = grouped[key] ?? (socket.command, Int(socket.pid), [])
+            entry.ports.insert(socket.port)
+            if entry.pid == 0 { entry.pid = Int(socket.pid) }
+            grouped[key] = entry
+        }
+        return grouped.values.map { entry in
+            let port = entry.ports.sorted().first ?? 0
+            return LocalServer(
+                url: "http://localhost:\(port)",
+                pid: entry.pid,
+                port: port,
+                ports: entry.ports.sorted(),
+                command: entry.name,
+                kind: "system",
+                title: entry.name,
+                host: "localhost"
             )
         }
     }

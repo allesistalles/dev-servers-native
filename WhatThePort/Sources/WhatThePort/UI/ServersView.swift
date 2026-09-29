@@ -47,33 +47,20 @@ struct ServersView: View {
 
     private var listIsEmpty: Bool {
         if isCleaning { return visibleServers.isEmpty }
-        return visibleServers.isEmpty && monitor.serviceInventory.isEmpty
+        return visibleServers.isEmpty && monitor.board.isEmpty
     }
 
     private var rowCount: Int {
         if isCleaning { return visibleServers.count }
-        let inventory = monitor.serviceInventory
-        return visibleServers.count
-            + inventory.needsAttention.count
-            + inventory.helpers.count
-            + inventory.sidecars.count
-            + inventory.lanDevices.count
-            + inventory.systemRows.count
+        return isCleaning ? visibleServers.count : max(monitor.board.count, 1)
     }
 
     @ViewBuilder private var listBody: some View {
         VStack(spacing: 0) {
-            if !isCleaning {
-                ServiceSections(monitor: monitor, showsAttention: true, showsRest: false)
-            }
-            if !visibleServers.isEmpty {
-                if !isCleaning && monitor.serviceInventory.showsSectionHeaders {
-                    GroupLabel(title: L10n.text("Servers"))
-                }
+            if isCleaning {
                 rows
-            }
-            if !isCleaning {
-                ServiceSections(monitor: monitor, showsAttention: false, showsRest: true)
+            } else {
+                BoardSections(monitor: monitor, openServer: openServer)
             }
         }
     }
@@ -217,7 +204,6 @@ struct ServersView: View {
                     .buttonStyle(PillButtonStyle())
                     .keyboardShortcut(.cancelAction)
                 Button {
-                    Usage.record(.cleanUp)
                     for server in selectedServers { monitor.stop(server) }
                     setCleaning(false)
                 } label: {
@@ -369,11 +355,9 @@ struct ServerRow: View {
                 if isHovered && cleaning == nil {
                     HStack(spacing: 2) {
                         IconButton(systemName: "arrow.up.right", size: 22, help: L10n.text("Open in browser")) {
-                            Usage.record(.openBrowser)
                             NSWorkspace.shared.open(server.url)
                         }
                         IconButton(systemName: "stop.fill", tint: Theme.text1.opacity(0.8), background: .clear, size: 22, help: L10n.text("Stop")) {
-                            Usage.record(.stop)
                             monitor.stop(server)
                         }
                     }
