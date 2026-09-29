@@ -134,10 +134,11 @@ The website uses cookieless [Vercel Web Analytics](https://vercel.com/docs/analy
 
 ## Build and install on a Mac
 
-This VM cannot compile the AppKit/SwiftUI app. Build it on a Mac with Xcode or a Swift 5.9+ toolchain (the package was written for Swift 5.9; Swift 6.2 is fine). From the repo root:
+This VM cannot compile the AppKit/SwiftUI app. The package is Swift 5.9 language mode. It builds with Apple Swift 6.4 and the Command Line Tools, without Xcode, against the macOS 26.5 SDK. From the repo root:
 
 ```bash
 cd WhatThePort
+export SDKROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk
 swift build -c release
 ./build-app.sh
 cp -R ".build/Dev Servers.app" /Applications/
@@ -145,9 +146,13 @@ codesign --force --deep --sign - "/Applications/Dev Servers.app"
 open "/Applications/Dev Servers.app"
 ```
 
+Export `SDKROOT` in the same shell before `./build-app.sh`. That script runs `swift build -c release` again, and it inherits the variable. The macOS 27 Command Line Tools SDK fails while compiling FlickerDot: FlickerDot uses `@State`, and the SwiftUIMacros plugin is not part of the Command Line Tools (it ships with Xcode). The 26.5 SDK is the one this app is built against.
+
+SwiftPM’s download of the Sparkle binary artifact can hang and never finish. If the build sits on that fetch, stop it, seed `~/Library/Caches/org.swift.swiftpm/artifacts` with the artifact, and rerun. Nothing in the project has to change for that.
+
 `./build-app.sh` already ad-hoc signs the bundle (`codesign --sign -`). The copy into `/Applications` needs a second ad-hoc signature because copying can break the seal. The executable inside the bundle is still named `WhatThePort` (the Swift package target). Finder and the menu bar show **Dev Servers**.
 
-The same build with Xcode:
+The same build with Xcode, which has the SwiftUI macros plugin and does not need `SDKROOT`:
 
 ```bash
 cd WhatThePort
@@ -157,7 +162,7 @@ cp -R ".build/Dev Servers.app" /Applications/
 codesign --force --deep --sign - "/Applications/Dev Servers.app"
 ```
 
-`xcodebuild` resolves the package. `./build-app.sh` is still what produces `Dev Servers.app` with Sparkle and the resources in the right places. Quit any old WhatThePort first: this fork’s bundle id is `website.vibed.devservers`, so macOS treats it as a different app.
+`xcodebuild` resolves the package. `./build-app.sh` is still what produces `Dev Servers.app` with Sparkle and the resources in the right places. If you already exported `SDKROOT` for the Command Line Tools, unset it before `xcodebuild`. Quit any old WhatThePort first: this fork’s bundle id is `website.vibed.devservers`, so macOS treats it as a different app.
 
 Check the classification logic without a Mac (Linux or Mac):
 

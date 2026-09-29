@@ -1,4 +1,5 @@
 import Darwin
+import DevServersCore
 import Foundation
 import Network
 
@@ -67,9 +68,10 @@ final class BonjourBrowser: NSObject, NetServiceDelegate, @unchecked Sendable {
                 let service = NetService(domain: domain, type: serviceType.isEmpty ? type + "." : serviceType, name: name)
                 service.delegate = self
                 resolvers[key] = service
+                let box = NetServiceBox(service)
                 DispatchQueue.main.async {
-                    service.schedule(in: .main, forMode: .common)
-                    service.resolve(withTimeout: 5)
+                    box.service.schedule(in: .main, forMode: .common)
+                    box.service.resolve(withTimeout: 5)
                 }
             }
         }
@@ -84,9 +86,10 @@ final class BonjourBrowser: NSObject, NetServiceDelegate, @unchecked Sendable {
             }
         }
         lock.unlock()
-        // NetService was scheduled on the main run loop.
+        // NetService was scheduled on the main run loop. The box is Sendable so the hop is explicit.
+        let boxes = gone.map(NetServiceBox.init)
         DispatchQueue.main.async {
-            gone.forEach { $0.stop() }
+            boxes.forEach { $0.service.stop() }
         }
     }
 
@@ -104,8 +107,9 @@ final class BonjourBrowser: NSObject, NetServiceDelegate, @unchecked Sendable {
     func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
         _ = errorDict
         // Keep the unresolved name so a later pass can try again.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak sender] in
-            sender?.resolve(withTimeout: 5)
+        let box = WeakNetServiceBox(sender)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            box.service?.resolve(withTimeout: 5)
         }
     }
 
@@ -125,4 +129,16 @@ final class BonjourBrowser: NSObject, NetServiceDelegate, @unchecked Sendable {
         }
         return nil
     }
+}
+
+/// NetService is not Sendable. Resolution runs on the main run loop, so the hop
+/// goes through this box instead of capturing the service in a Sendable closure.
+private final class NetServiceBox: @unchecked Sendable {
+    let service: NetService
+    init(_ service: NetService) { self.service = service }
+}
+
+private final class WeakNetServiceBox: @unchecked Sendable {
+    weak var service: NetService?
+    init(_ service: NetService) { self.service = service }
 }

@@ -1,4 +1,5 @@
 import Darwin
+import DevServersCore
 import Foundation
 
 /// Short TCP connects used to find an openable web UI on a Bonjour host.
@@ -6,20 +7,17 @@ enum PortalProber {
     static func probe(_ targets: [ProbeTarget], timeout: TimeInterval = 0.4) -> [ProbeResult] {
         guard !targets.isEmpty else { return [] }
         let group = DispatchGroup()
-        let lock = NSLock()
-        var results: [ProbeResult] = []
+        let box = ProbeBox()
         for target in targets {
             group.enter()
             DispatchQueue.global(qos: .utility).async {
-                let open = tcpOpen(host: target.host, port: target.port, timeout: timeout)
-                lock.lock()
-                results.append(ProbeResult(host: target.host, port: target.port, open: open))
-                lock.unlock()
+                let open = Self.tcpOpen(host: target.host, port: target.port, timeout: timeout)
+                box.append(ProbeResult(host: target.host, port: target.port, open: open))
                 group.leave()
             }
         }
         _ = group.wait(timeout: .now() + timeout + 0.5)
-        return results
+        return box.snapshot()
     }
 
     static func tcpOpen(host: String, port: Int, timeout: TimeInterval) -> Bool {
@@ -63,6 +61,23 @@ enum NameResolver {
             box.set(code == 0)
         }
         return box.wait(timeout: timeout) ?? false
+    }
+}
+
+private final class ProbeBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var results: [ProbeResult] = []
+
+    func append(_ result: ProbeResult) {
+        lock.lock()
+        results.append(result)
+        lock.unlock()
+    }
+
+    func snapshot() -> [ProbeResult] {
+        lock.lock()
+        defer { lock.unlock() }
+        return results
     }
 }
 
