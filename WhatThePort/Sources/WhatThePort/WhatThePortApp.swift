@@ -38,19 +38,19 @@ struct WhatThePortApp: App {
 
     var body: some Scene {
         MenuBarExtra {
-            PopoverRoot(monitor: monitor)
+            LocalizedView { PopoverRoot(monitor: monitor) }
         } label: {
-            MenuBarLabel(monitor: monitor)
+            LocalizedView { MenuBarLabel(monitor: monitor) }
         }
         .menuBarExtraStyle(.window)
 
-        Window("Settings", id: "settings") {
-            SettingsView(monitor: monitor)
+        Window(L10n.text("Settings"), id: "settings") {
+            LocalizedView { SettingsView(monitor: monitor) }
         }
         .windowResizability(.contentSize)
 
-        Window("Welcome to WhatThePort", id: "onboarding") {
-            OnboardingContainer(monitor: monitor)
+        Window(L10n.text("Welcome to WhatThePort"), id: "onboarding") {
+            LocalizedView { OnboardingContainer(monitor: monitor) }
         }
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
@@ -109,7 +109,7 @@ struct MenuBarLabel: View {
             }
         }()
         Image(nsImage: MenuBarIcon.image(glyph: glyph, count: label))
-            .accessibilityLabel(count == 0 ? "WhatThePort, no servers" : "WhatThePort, \(count) servers")
+            .accessibilityLabel(count == 0 ? L10n.text("WhatThePort, no servers") : L10n.format("WhatThePort, %d servers", count))
             .task {
                 let openSettings = {
                     NSApp.activate(ignoringOtherApps: true)

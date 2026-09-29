@@ -20,6 +20,7 @@
 - **Previews and pull requests (optional).** A Vercel preview button and the branch’s pull request, through the GitHub CLI you’re already signed in to.
 - **Terminal UI.** `wtp` shows the same servers, details and Clean up in your terminal. `wtp list --json` prints them as JSON for scripts and coding agents.
 - **Global shortcut.** ⌥⌘P opens the popover.
+- **Interface language.** English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian. Select a language on the first onboarding screen or in Settings → General → Language; changes apply immediately. System default follows the Mac’s preferred languages, with English fallback. Hebrew uses right-to-left layout. `wtp language` reads the shared app preference; `wtp language ja` sets it; `wtp language system` restores automatic selection. The TUI, command help and JSON remain English; user data and commands stay unchanged. The site’s Translations section previews real native onboarding screenshots.
 - **Native.** Written in Swift. No Electron, no Dock icon. Light and dark mode.
 
 ## Install

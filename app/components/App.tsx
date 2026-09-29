@@ -3,7 +3,7 @@
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import styles from './landing.module.css'
 import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, VercelIcon } from './icons'
-import { GET_IT, TERMINAL } from './sections'
+import { GET_IT, TERMINAL, TRANSLATIONS } from './sections'
 import {
   type Agent,
   type Server,
@@ -30,10 +30,11 @@ const SECTION_VIEWS: View[] = [
   { name: 'cleanUp' },
   { name: 'list' },
   { name: 'list' },
+  { name: 'list' },
 ]
 
 // The Terminal section shows `wtp` instead, and the last section the dot matrix.
-const opensPopover = (section: number) => section !== GET_IT && section !== TERMINAL
+const opensPopover = (section: number) => section !== GET_IT && section !== TERMINAL && section !== TRANSLATIONS
 
 const suggested = (running: string[]) =>
   SERVERS.filter((s) => s.cleanUp?.suggested && running.includes(s.port)).map((s) => s.port)

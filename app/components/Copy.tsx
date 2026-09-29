@@ -1,4 +1,5 @@
 import styles from './landing.module.css'
+import { LanguageHeadline } from './LanguageHeadline'
 import {
   AppleIcon,
   ClaudeIcon,
@@ -57,6 +58,7 @@ const COMMANDS = [
   { name: 'wtp', detail: 'Browse, open and stop servers' },
   { name: 'wtp list', detail: 'Print them and exit' },
   { name: 'wtp list --json', detail: 'For scripts and agents' },
+  { name: 'wtp language de', detail: 'Set the Mac app’s language' },
 ]
 
 const FACTS = [
@@ -137,6 +139,23 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
               </li>
             ))}
           </ul>
+        </div>
+      )
+    case 5:
+      return (
+        <div className={styles.copy}>
+          <PortLabel port="8080" colon="on" label="Translations" />
+          <LanguageHeadline />
+          <p className={styles.body}>
+            English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian.
+            Choose your language on the first onboarding screen or in Settings.
+            Changes apply immediately, with right-to-left layouts for Hebrew.
+          </p>
+          <p className={styles.body}>
+            Follows your Mac’s preferred languages by default. Project names, paths and commands stay as you wrote them.
+            The terminal interface stays in English.
+          </p>
+          <a className={styles.github} href="/guides/change-app-language">About translations <span aria-hidden>↗</span></a>
         </div>
       )
     default:

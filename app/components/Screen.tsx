@@ -6,8 +6,9 @@ import { AppPopover, useDemo } from './App'
 import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { BatteryIcon, DotGrid, GitHubIcon, WifiIcon } from './icons'
-import { GET_IT, GITHUB_URL, SECTIONS, TERMINAL } from './sections'
+import { GET_IT, GITHUB_URL, SECTIONS, TERMINAL, TRANSLATIONS } from './sections'
 import { TerminalWindow } from './Terminal'
+import { Translations } from './Translations'
 
 type Props = {
   active: number
@@ -64,7 +65,7 @@ export function Screen({ active, stars, onNavigate }: Props) {
             className={styles.wallpaper}
             style={{
               '--wallpaper-step': index,
-              backgroundImage: `url(/wallpapers/${section.scene}.jpg)`,
+              backgroundImage: `url(/wallpapers/${'wallpaper' in section ? section.wallpaper : section.scene}.jpg)`,
             } as CSSProperties}
           />
         ))}
@@ -84,6 +85,7 @@ export function Screen({ active, stars, onNavigate }: Props) {
       </div>
 
       <TerminalWindow visible={active === TERMINAL} desktop />
+      <Translations visible={active === TRANSLATIONS} desktop />
 
       <div className={styles.popoverShell} data-open={demo.open}>
         <AppPopover demo={demo} />

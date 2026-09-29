@@ -93,11 +93,21 @@ Add `--appearance light` or `--appearance dark` to check a specific appearance w
 
 To render the onboarding loading, success, missing-tool, and approval states without changing macOS permissions or login items, run `WhatThePort --snapshot-onboarding <dir>`.
 
+### Interface language
+
+The native app supports **English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian**. Choose your language on the first onboarding screen or in **Settings → General → Language**. Changes apply immediately. System default follows your Mac’s preferred languages, falling back to English. Hebrew uses a right-to-left layout.
+
+`wtp language` shows the app preference; `wtp language ja` sets it and `wtp language system` restores the system default. The terminal’s `?` screen also shows App language. The TUI, command help and JSON remain English, and project names, paths and commands stay unchanged.
+
+[Preview all eight languages](https://whattheport.dev/#translations) or read [Localization](LOCALIZATION.md) for translation and build details.
+
+![Native onboarding in Japanese, with the language picker on the first step](public/languages/onboarding-ja.png)
+
 ### Settings
 
 Open Settings from the gear in the popover (⌘,):
 
-- **General** - Launch at login, menu bar icon style, editor, global shortcut, the `wtp` terminal command, scan interval, anonymous usage sharing
+- **General** - Language, launch at login, menu bar icon style, editor, global shortcut, the `wtp` terminal command, scan interval, anonymous usage sharing
 - **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers

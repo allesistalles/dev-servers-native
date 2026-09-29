@@ -40,6 +40,7 @@ struct PortLabel: View {
                 .font(large ? Theme.display : Theme.monoMedium)
                 .foregroundStyle(color)
         }
+        .environment(\.layoutDirection, .leftToRight)
     }
 }
 
