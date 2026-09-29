@@ -43,7 +43,7 @@ Agents can’t see your browser tabs. Say where the server is in `CLAUDE.md` or 
 ## Dev server
 
 Run the dev server on $CONDUCTOR_PORT. Before starting one, check whether it's already
-running (`lsof -nP -iTCP:$CONDUCTOR_PORT -sTCP:LISTEN` or `wtp list --json`) and reuse it.
+running (`lsof -nP -iTCP:$CONDUCTOR_PORT -sTCP:LISTEN`) and reuse it.
 ```
 
 ## Clean up after deleted worktrees
@@ -75,6 +75,6 @@ Five worktrees means five copies of your framework’s dev server, each with its
 
 **Clean up** preselects those servers, plus any that have been idle for hours, and stops their whole process trees together. Set it to Ask and WhatThePort notifies you when there’s something to clean up; set it to Automatic and it just happens.
 
-For agents, `wtp list --json` returns every server with its `folder`, `branch`, `url` and `session`, so an agent can find the server for its own worktree instead of starting another.
+The menu bar list shows each server’s folder, branch and session, so you can find the server for a worktree instead of starting another.
 
 [Download WhatThePort](/WhatThePort.dmg) for Apple Silicon Macs on macOS 14 or later.

@@ -189,21 +189,21 @@ export type ExtraRow = {
 export const DEMO_GROUPS: { title: string; rows: ExtraRow[] }[] = [
   {
     title: 'Needs attention',
-    rows: [
-      { id: 'claude-mem', port: '37777', name: 'Claude-mem', detail: 'Stopped' },
-      { id: 'kitchen', port: '', name: 'kitchen', detail: 'Firmware only' },
-    ],
+    rows: [{ id: 'claude-mem', port: '37777', name: 'Claude-mem', detail: 'Stopped' }],
   },
   {
-    title: 'Helpers',
+    title: 'Pinned',
     rows: [
-      { id: 'dialdash', port: '7878', name: 'DialDash', detail: 'LaunchAgent' },
-      { id: 'claude-mem-helper', port: '37777', name: 'Claude-mem', detail: 'Stopped' },
+      { id: 'dialdash', port: '7878', name: 'DialDash', detail: 'Pushes DialDash / screen-dial data into the tray bridge' },
+      { id: 'led', port: '5177', name: 'LED Round Dial', detail: 'Browser twin for the LED Round Dial' },
     ],
   },
   {
     title: 'On the network',
-    rows: [{ id: 'monster', port: '80', name: 'Monster Settings', detail: '192.168.0.148' }],
+    rows: [
+      { id: 'monster', port: '80', name: 'Monster Settings', detail: 'Wi-Fi / settings portal for monster' },
+      { id: 'kitchen', port: '3232', name: 'kitchen', detail: 'Firmware only' },
+    ],
   },
 ]
 

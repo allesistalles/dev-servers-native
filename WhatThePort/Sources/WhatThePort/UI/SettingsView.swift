@@ -70,7 +70,6 @@ private struct GeneralPane: View {
     @AppStorage(Preferences.terminal) private var terminal = "com.apple.Terminal"
     @AppStorage(Preferences.hotkey) private var hotkey = true
     @AppStorage(Preferences.scanInterval) private var scanInterval = 2.0
-    @AppStorage(Preferences.shareUsage) private var shareUsage = true
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
@@ -114,9 +113,6 @@ private struct GeneralPane: View {
                 }
                 .onChange(of: hotkey) { _, enabled in HotKey.shared.setEnabled(enabled) }
             }
-            Section(L10n.text("Terminal")) {
-                CommandLineToolRow()
-            }
             Section(L10n.text("Scanning")) {
                 Picker(L10n.text("Scan every"), selection: $scanInterval) {
                     Text(L10n.text("1 second")).tag(1.0)
@@ -125,60 +121,7 @@ private struct GeneralPane: View {
                     Text(L10n.text("10 seconds")).tag(10.0)
                 }
             }
-            Section {
-                Toggle(isOn: Binding(get: { shareUsage }, set: Usage.setSharing)) {
-                    SettingLabel(L10n.text("Share anonymous usage"), caption: L10n.text("Once a day: that the app ran and which features you used"))
-                }
-            } header: {
-                Text(L10n.text("Privacy"))
-            } footer: {
-                Text(L10n.text("Feature names only, like Clean up or Stop. Never your servers, projects, files or anything about your Mac."))
-                    .font(Theme.caption)
-                    .foregroundStyle(.secondary)
             }
-        }
-    }
-}
-
-/// Installs or removes the `wtp` command.
-private struct CommandLineToolRow: View {
-    @State private var state = CommandLineTool.state
-    @State private var error: String?
-
-    var body: some View {
-        HStack {
-            SettingLabel(L10n.text("wtp command"), caption: caption)
-            Spacer()
-            switch state {
-            case .installed:
-                Button(L10n.text("Remove")) { run(CommandLineTool.uninstall) }
-            case .other:
-                Button(L10n.text("Replace…")) { run(CommandLineTool.install) }
-            case .notInstalled, .unavailable:
-                Button(L10n.text("Install…")) { run(CommandLineTool.install) }
-                    .disabled(state == .unavailable)
-            }
-        }
-        // Pick up changes made outside the app, e.g. removing the link by hand.
-        .onAppear { state = CommandLineTool.state }
-    }
-
-    private var caption: String {
-        if let error { return L10n.format("Couldn’t update %@: %@", CommandLineTool.linkPath, error) }
-        switch state {
-        case .installed: return L10n.text("Type wtp in any terminal to see and stop your servers")
-        case .notInstalled: return L10n.text("Adds wtp to see and stop your servers from any terminal")
-        case .unavailable: return L10n.text("Move Dev Servers to Applications to add the wtp command")
-        case .other(let path):
-            return FileManager.default.fileExists(atPath: path)
-                ? L10n.format("%@ is another program: %@", CommandLineTool.linkPath, (path as NSString).abbreviatingWithTildeInPath)
-                : L10n.text("wtp points to a copy of Dev Servers that’s no longer there")
-        }
-    }
-
-    private func run(_ action: () -> String?) {
-        error = action()
-        state = CommandLineTool.state
     }
 }
 
@@ -380,7 +323,7 @@ private struct IntegrationsPane: View {
             }
             .disabled(!GitHubLookup.isAvailable)
             Section {
-                Text(L10n.text("Agent and Git details come from local files only. The GitHub options above and app update checks use the network."))
+                Text(L10n.text("Agent and Git details come from local files only. The GitHub options above use the network."))
                     .font(Theme.caption)
                     .foregroundStyle(.secondary)
             }
@@ -399,7 +342,6 @@ enum ToolDetection {
 // MARK: - About
 
 private struct AboutPane: View {
-    @ObservedObject private var updater = AppUpdater.shared
     private let links: [(label: String, value: String, url: String)] = [
         ("Upstream", "tomjohndesign/what-the-port", "https://github.com/tomjohndesign/what-the-port"),
         (L10n.text("Website"), "tomjohn.design", "https://www.tomjohn.design"),
@@ -427,32 +369,6 @@ private struct AboutPane: View {
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
             }
-            Section(L10n.text("Updates")) {
-                if let reason = updater.unavailableReason {
-                    Text(reason).foregroundStyle(.secondary)
-                } else {
-                    Toggle(L10n.text("Automatically check for updates"), isOn: Binding(
-                        get: { updater.automaticallyChecksForUpdates },
-                        set: updater.setAutomaticallyChecksForUpdates
-                    ))
-                    Toggle(isOn: Binding(
-                        get: { updater.automaticallyDownloadsUpdates },
-                        set: updater.setAutomaticallyDownloadsUpdates
-                    )) {
-                        SettingLabel(L10n.text("Download and install updates automatically"), caption: L10n.text("Installs when you quit. Some updates may ask to restart the app."))
-                    }
-                    .disabled(!updater.automaticallyChecksForUpdates)
-                }
-                HStack {
-                    Button(L10n.text("Check for Updates…"), action: updater.checkForUpdates)
-                        .disabled(!updater.canCheckForUpdates)
-                    Spacer()
-                    if let date = updater.lastUpdateCheckDate {
-                        Text(L10n.format("Last checked %@", date.formatted(.dateTime.locale(L10n.locale))))
-                            .font(Theme.caption).foregroundStyle(.secondary)
-                    }
-                }
-            }
             Section {
                 ExternalLinkRow(label: L10n.text("Report a bug"), value: "GitHub Issues", url: FeedbackLink.issue(.bug))
                 ExternalLinkRow(label: L10n.text("Suggest a feature"), value: "GitHub Issues", url: FeedbackLink.issue(.feature))
@@ -464,7 +380,7 @@ private struct AboutPane: View {
                     .foregroundStyle(.secondary)
             }
             Section {
-                ExternalLinkRow(label: L10n.text("Enjoying WTP?"), value: L10n.text("Tip jar"), url: FeedbackLink.tip)
+                ExternalLinkRow(label: L10n.text("Enjoying Dev Servers?"), value: L10n.text("Tip jar"), url: FeedbackLink.tip)
             } header: {
                 Text(L10n.text("Support"))
             } footer: {

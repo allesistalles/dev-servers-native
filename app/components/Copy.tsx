@@ -54,11 +54,10 @@ const TOOLS = [
   { name: 'Vercel', detail: 'preview per branch', icon: <VercelIcon /> },
 ]
 
-const COMMANDS = [
-  { name: 'wtp', detail: 'Browse, open and stop servers' },
-  { name: 'wtp list', detail: 'Print them and exit' },
-  { name: 'wtp list --json', detail: 'For scripts and agents' },
-  { name: 'wtp language de', detail: 'Set the Mac app’s language' },
+const BOARD = [
+  { name: 'Open', detail: 'Browser, when the card has a URL' },
+  { name: 'Start', detail: 'Stopped helpers and LaunchAgents' },
+  { name: 'Kill', detail: 'bootout, then the process' },
 ]
 
 const FACTS = [
@@ -125,17 +124,17 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
     case 4:
       return (
         <div className={styles.copy}>
-          <PortLabel port="5173" colon="on" label="Terminal" />
-          <h2 className={styles.headline}>WTP TUI</h2>
+          <PortLabel port="5177" colon="on" label="Board" />
+          <h2 className={styles.headline}>Open, start and stop, on the card.</h2>
           <p className={styles.body}>
-            Type <span className={styles.inlineMono}>wtp</span> for the same servers, details and Clean up in your
-            terminal, in its own colours. Click the window and try it: arrow keys to move, space for actions, q to quit.
+            Overview, All, Local, LAN, Stopped and System. Open, Start, Restart and Kill stay on every card you can
+            control. Firmware-only devices say so, and have no Open button.
           </p>
           <ul className={styles.list}>
-            {COMMANDS.map((command) => (
-              <li key={command.name} className={styles.listRow}>
-                <span className={`${styles.listName} ${styles.inlineMono}`}>{command.name}</span>
-                <span className={styles.factDetail}>{command.detail}</span>
+            {BOARD.map((row) => (
+              <li key={row.name} className={styles.listRow}>
+                <span className={styles.listName}>{row.name}</span>
+                <span className={styles.factDetail}>{row.detail}</span>
               </li>
             ))}
           </ul>
@@ -148,12 +147,10 @@ export function SectionCopy({ index, stars }: { index: number; stars: number | n
           <LanguageHeadline />
           <p className={styles.body}>
             English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian.
-            Choose your language on the first onboarding screen or in Settings.
-            Changes apply immediately, with right-to-left layouts for Hebrew.
+            Choose your language in Settings. Changes apply immediately, with right-to-left layouts for Hebrew.
           </p>
           <p className={styles.body}>
             Follows your Mac’s preferred languages by default. Project names, paths and commands stay as you wrote them.
-            The terminal interface stays in English.
           </p>
           <a className={styles.github} href="/guides/change-app-language">About translations <span aria-hidden>↗</span></a>
         </div>

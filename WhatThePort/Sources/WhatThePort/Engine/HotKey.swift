@@ -19,7 +19,6 @@ final class HotKey {
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in
             DispatchQueue.main.async {
-                Usage.record(.shortcut)
                 StatusItemOpener.open()
             }
             return noErr

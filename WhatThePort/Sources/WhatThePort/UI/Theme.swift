@@ -58,7 +58,7 @@ enum Theme {
     static let monoCaption = Font.custom("GeistMono-Regular", fixedSize: 11)
 }
 
-/// Raw colors shared by the app and the `wtp` terminal UI.
+/// Raw colors shared by the menu bar app.
 enum Palette {
     typealias Pair = (light: UInt32, dark: UInt32)
 

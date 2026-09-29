@@ -4,7 +4,7 @@ import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useSta
 import styles from './landing.module.css'
 import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, VercelIcon } from './icons'
 import { type AppLanguageCode, type Localizer, localizer } from './languages'
-import { GET_IT, TERMINAL } from './sections'
+import { GET_IT } from './sections'
 import {
   type Agent,
   type Server,
@@ -35,8 +35,8 @@ const SECTION_VIEWS: View[] = [
   { name: 'list' },
 ]
 
-// The Terminal section shows `wtp` instead, and the last section the dot matrix.
-const opensPopover = (section: number) => section !== GET_IT && section !== TERMINAL
+// The last section shows the dot matrix. Every other section opens the popover.
+const opensPopover = (section: number) => section !== GET_IT
 
 const ramShare = (mb: number) => `${((mb / SYSTEM_MEMORY) * 100).toFixed(1)}%`
 
@@ -435,6 +435,15 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
             </span>
           </div>
         ))}
+        {!cleaning && (
+          <div className={styles.boardTabs} role="tablist">
+            {['Overview', 'All', 'Local', 'LAN', 'Stopped', 'System'].map((tab) => (
+              <span key={tab} className={tab === 'Overview' ? styles.boardTabOn : styles.boardTab} role="tab">
+                {l.text(tab)}
+              </span>
+            ))}
+          </div>
+        )}
         {!cleaning &&
           DEMO_GROUPS.map((group) => (
             <div key={group.title}>
@@ -452,6 +461,19 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
                       <span className={styles.ellipsis} style={{ color: row.detail === 'Firmware only' || row.detail === 'Stopped' ? AMBER : undefined }}>
                         {l.text(row.detail)}
                       </span>
+                    </span>
+                    <span className={styles.cardActions}>
+                      {row.detail === 'Stopped' ? (
+                        <button type="button" className={styles.cardAction} onClick={(e) => e.stopPropagation()}>{l.text('Start')}</button>
+                      ) : row.detail === 'Firmware only' ? null : (
+                        <button type="button" className={styles.cardAction} onClick={(e) => { e.stopPropagation(); trigger(row.id) }}>{flash === row.id ? l.text('Opened') : l.text('Open')}</button>
+                      )}
+                      {row.id === 'dialdash' && (
+                        <>
+                          <button type="button" className={styles.cardAction} onClick={(e) => e.stopPropagation()}>{l.text('Restart')}</button>
+                          <button type="button" className={styles.cardAction} onClick={(e) => e.stopPropagation()}>{l.text('Kill')}</button>
+                        </>
+                      )}
                     </span>
                   </span>
                 </div>

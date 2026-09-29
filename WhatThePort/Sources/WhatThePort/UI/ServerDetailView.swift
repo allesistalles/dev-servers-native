@@ -49,12 +49,10 @@ struct ServerDetailView: View {
                     }
                     HStack(spacing: 6) {
                         IconButton(systemName: "arrow.clockwise", help: restartHelp) {
-                            Usage.record(.restart)
                             monitor.restart(server)
                         }
                         .disabled(server.launch == nil || !server.cwdExists)
                         IconButton(systemName: "stop.fill", tint: Theme.softRed, background: Theme.red.opacity(0.14), help: L10n.format("Stop %d processes", server.processes.count)) {
-                            Usage.record(.stop)
                             monitor.stop(server)
                             back()
                         }
@@ -137,7 +135,6 @@ struct ServerDetailView: View {
                     }
                 }
                 .buttonStyle(.plain)
-                .simultaneousGesture(TapGesture().onEnded { Usage.record(.pullRequest) })
             })
         }
         if let agent = server.agent {
@@ -227,7 +224,6 @@ struct ServerDetailView: View {
     private var footer: some View {
         HStack(spacing: 8) {
             Button {
-                Usage.record(.openBrowser)
                 NSWorkspace.shared.open(server.url)
             } label: {
                 Text(L10n.format("Open localhost:%@", String(server.port))).frame(maxWidth: .infinity)
@@ -237,7 +233,6 @@ struct ServerDetailView: View {
 
             if let preview = github.result(for: server)?.preview {
                 Button {
-                    Usage.record(.vercelPreview)
                     NSWorkspace.shared.open(preview.url)
                 } label: {
                     HStack(spacing: 6) {
@@ -256,7 +251,6 @@ struct ServerDetailView: View {
                 Divider()
                 if let root = server.project.root ?? server.cwd, server.cwdExists {
                     Button(L10n.text("Open in editor")) {
-                        Usage.record(.openEditor)
                         EditorLauncher.open(root)
                     }
                     Button(L10n.text("Reveal in Finder")) { NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: root) }
@@ -321,7 +315,6 @@ struct SessionValue: View {
                     Button(L10n.format("Reveal %@ workspace", workspace)) { reveal(server.project.root ?? server.cwd) }
                 }
                 Button(L10n.format("Resume in %@", TerminalLauncher.current.name)) {
-                    Usage.record(.resumeSession)
                     SessionLauncher.resume(session, fallbackDirectory: server.cwd)
                 }
                 if let transcript = session.transcript {

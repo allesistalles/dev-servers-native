@@ -1,7 +1,5 @@
 import AppKit
 import SwiftUI
-import ServiceManagement
-import UserNotifications
 
 /// `WhatThePort --snapshot <dir>` scans for a few seconds, renders each popover
 /// page with live data to PNG, and exits. Useful for checking the UI without
@@ -43,11 +41,6 @@ enum SnapshotRenderer {
                          to: output.appendingPathComponent("settings-\(pane.id.lowercased().replacingOccurrences(of: " & ", with: "-").replacingOccurrences(of: " ", with: "-")).png"))
         }
 
-        for step in OnboardingStep.allCases {
-            renderWindow(OnboardingView(monitor: monitor, step: step), size: CGSize(width: 480, height: 620),
-                         to: output.appendingPathComponent("onboarding-\(step.rawValue + 1).png"))
-        }
-
         // App icon master: 824pt artwork centred on a 1024pt canvas, per the macOS icon grid.
         let iconRenderer = ImageRenderer(content: AppIconView(size: 824).frame(width: 1024, height: 1024))
         iconRenderer.scale = 1
@@ -77,53 +70,6 @@ enum SnapshotRenderer {
                 ServerDetailView(server: server, monitor: monitor, back: {})
             }
         }
-    }
-
-    /// Deterministic onboarding samples. These services never request real
-    /// notification permission, alter login items, or change preferences.
-    static func runOnboarding(monitor: ServerMonitor, directory: String) {
-        configureAppearance()
-        let output = URL(fileURLWithPath: directory, isDirectory: true)
-        try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
-        let samples: [(String, OnboardingStep, UNAuthorizationStatus, SMAppService.Status)] = [
-            ("tools-loading", .tools, .authorized, .enabled),
-            ("tools-confirmed", .tools, .authorized, .enabled),
-            ("tools-missing", .tools, .authorized, .enabled),
-            ("setup-actions", .leaks, .notDetermined, .notRegistered),
-            ("setup-pending", .leaks, .notDetermined, .notRegistered),
-            ("setup-confirmed", .leaks, .authorized, .enabled),
-            ("setup-approval", .leaks, .denied, .requiresApproval),
-        ]
-        renderWindow(OnboardingView(monitor: monitor), size: CGSize(width: 480, height: 620),
-                     to: output.appendingPathComponent("welcome.png"))
-        for (name, step, authorization, login) in samples {
-            let services = OnboardingServices(
-                detect: { tool in
-                    if name == "tools-loading", tool != .claude { try? await Task.sleep(for: .seconds(5)) }
-                    return name != "tools-missing" || tool != .github
-                },
-                notifications: { authorization },
-                requestNotifications: { try await Task.sleep(for: .seconds(5)) },
-                login: { login },
-                registerLogin: { try await Task.sleep(for: .seconds(5)) }
-            )
-            let status = OnboardingStatus(services: services)
-            if name == "setup-pending" {
-                Task {
-                    await status.refreshSetup()
-                    async let notification: Void = status.allowNotifications()
-                    async let registration: Void = status.addLoginItem()
-                    _ = await (notification, registration)
-                }
-            }
-            renderWindow(OnboardingView(monitor: monitor, status: status, step: step),
-                         size: CGSize(width: 480, height: 620),
-                         to: output.appendingPathComponent("\(name).png"))
-        }
-        // What people updating from before usage sharing see.
-        renderWindow(OnboardingView(monitor: monitor, step: .usage, usageOnly: true), size: CGSize(width: 480, height: 620),
-                     to: output.appendingPathComponent("usage-after-update.png"))
-        exit(0)
     }
 
     private static func configureAppearance() {

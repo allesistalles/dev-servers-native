@@ -1,6 +1,6 @@
 # Dev Servers
 
-Native macOS menu-bar app for local dev servers, LaunchAgents and LAN devices. This is a fork of [WhatThePort](https://github.com/tomjohndesign/what-the-port) by [Tomjohn](https://tomjohn.design), MIT. It keeps WhatThePort’s scanner, leak alerts, Clean up, agent sessions and `wtp`, and adds the helpers, noise rules and LAN discovery needed to replace the Electron [Dev Servers](https://github.com/allesistalles/dev-servers) app.
+Native macOS menu-bar app for local dev servers, LaunchAgents and LAN devices. This is a fork of [WhatThePort](https://github.com/tomjohndesign/what-the-port) by [Tomjohn](https://tomjohn.design), MIT. It keeps WhatThePort’s scanner, leak alerts, Clean up and agent sessions, and adds the helpers, noise rules, LAN discovery and card controls needed to replace the Electron [Dev Servers](https://github.com/allesistalles/dev-servers) app.
 
 The app’s display name is **Dev Servers**. Bundle id: `website.vibed.devservers`. The website download stays [`/WhatThePort.dmg`](https://whattheport.dev/WhatThePort.dmg).
 
@@ -59,64 +59,42 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 - **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
 - **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
 - **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
-- **Automatic updates** - Signed updates download in the background and install when you quit; controls and manual checks in Settings → About
+- **Board** - Overview, All, Local, LAN, Stopped and System. Open, Start, Restart and Kill stay on the card
+- **LAN** - mDNS portals and seed hosts, including Monster Settings. Firmware-only devices stay OTA-only
 - **Global shortcut** - ⌥⌘P opens the popover
-- **Terminal UI** - `wtp` shows the same servers, details and Clean up in your terminal
 - **Light and dark mode** - Follows your Mac’s appearance, with matching port numbers and colon colors
 
 ## Usage
 
 WhatThePort lives in the menu bar as a small dot grid. Click it to see every server:
 
-- Hover a row to open it in the browser or stop it
-- Click a row for details: session, branch, folder, command, charts and processes
+- Open, Start, Restart and Kill sit on each card you can control
+- Click a local dev server for details: session, branch, folder, command, charts and processes
 - Click **Clean up** to tick the servers you want gone and stop them together
 
-Right-click the dot grid to open a server in the browser, open Settings, check for updates, send feedback or quit.
+Right-click the dot grid to open a server in the browser, open Settings, send feedback or quit.
 
 Can't see the dot grid? The menu bar hides icons that don't fit: click » at its edge on macOS 27, or check **System Settings → Menu Bar**. Opening WhatThePort again from Finder or Spotlight shows the popover, or Settings when the icon is hidden.
 
-### In the terminal
-
-`wtp` opens the same server list in your terminal, using the app's scanner and settings. Onboarding offers to install it, or click **Install…** in **Settings → General → Terminal**. That links `/usr/local/bin/wtp` to the app, asking for your password if the folder needs it, and keeps working through updates. To link it yourself:
-
-```bash
-sudo mkdir -p /usr/local/bin
-sudo ln -sf "/Applications/Dev Servers.app/Contents/MacOS/WhatThePort" /usr/local/bin/wtp
-```
-
-- `↑` `↓` to select, `⏎` for details, `space` for an Actions menu (open, restart, stop, resume the agent session, editor, copy), `c` for Clean up, `?` for every key
-- Every action also has its own key, such as `o` to open, `r` to restart and `s` to stop; in details, `i` shows more info and `p` shows processes
-- Click rows and scroll with the mouse
-- `wtp list` prints the servers and exits; `wtp list --json` prints them as JSON for scripts and agents
-
-`wtp` follows your terminal's colors and leaves notifications and automatic clean up to the menu bar app. Memory and CPU charts fill in while it runs. From source, run `swift run WhatThePort --tui`.
-
-To check the UI without the menu bar, `WhatThePort --snapshot <dir>` renders each view with live data to PNG.
+To check the UI without the menu bar, `swift run DevServers --snapshot <dir>` renders each view with live data to PNG.
 Add `--appearance light` or `--appearance dark` to check a specific appearance without changing your Mac’s settings.
-
-To render the onboarding loading, success, missing-tool, and approval states without changing macOS permissions or login items, run `WhatThePort --snapshot-onboarding <dir>`.
 
 ### Interface language
 
-The native app supports **English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian**. Choose your language on the first onboarding screen or in **Settings → General → Language**. Changes apply immediately. System default follows your Mac’s preferred languages, falling back to English. Hebrew uses a right-to-left layout.
-
-`wtp language` shows the app preference; `wtp language ja` sets it and `wtp language system` restores the system default. The terminal’s `?` screen also shows App language. The TUI, command help and JSON remain English, and project names, paths and commands stay unchanged.
+The native app supports **English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian**. Choose your language in **Settings → General → Language**. Changes apply immediately. System default follows your Mac’s preferred languages, falling back to English. Hebrew uses a right-to-left layout.
 
 [Preview all eight languages](https://whattheport.dev/#translations) or read [Localization](LOCALIZATION.md) for translation and build details.
-
-![Native onboarding in Japanese: the language picker on the first step, with a preview of Servers rows](docs/images/onboarding-ja.png)
 
 ### Settings
 
 Open Settings from the gear in the popover (⌘,):
 
-- **General** - Language, launch at login, menu bar icon style, editor, global shortcut, the `wtp` terminal command, scan interval, anonymous usage sharing
+- **General** - Language, launch at login, menu bar icon style, editor, global shortcut, scan interval
 - **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
 - **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
 - **Ports & processes** - Port range and which processes count as dev servers
 - **Integrations** - Claude Code, Codex and Conductor session links, branch names, Vercel previews and pull requests
-- **About** - Version, update controls, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, and a tip jar
+- **About** - Version, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, a tip jar, and credit to the upstream WhatThePort project
 
 ## How It Works
 
@@ -124,11 +102,7 @@ WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's
 
 ## Privacy
 
-There's no account and no analytics SDK. Everything the app shows comes from your Mac and stays there. It only goes online to:
-
-- **Check for updates** - Sparkle fetches the update feed from whattheport.dev about once a day.
-- **Share anonymous usage** - Once a day, the app requests `whattheport.dev/usage/<feature>` for each feature you used, such as `/usage/stop` or `/usage/clean-up`, plus `/usage/active` to say it ran. That's the whole report: no body, cookies or identifier, and nothing about your servers, projects, files or Mac. The app's user agent is `DevServers/<version>`. The site only counts these requests. Like any web request, the host (Vercel) sees the connection's IP address in its standard logs; the counts don't use it. Onboarding asks before anything is sent, and you can turn it off in **Settings → General → Privacy**. See [`Usage.swift`](WhatThePort/Sources/WhatThePort/Engine/Usage.swift) for the full list.
-- **Look up previews and pull requests (off by default)** - Uses the GitHub CLI you're already signed in to.
+There's no account, no analytics SDK, and no usage sharing. Everything the app shows comes from your Mac and stays there. It only goes online, if you turn them on, to look up Vercel previews and pull requests through the GitHub CLI. The app does not check for updates.
 
 The website uses cookieless [Vercel Web Analytics](https://vercel.com/docs/analytics) to count visits and download clicks.
 
@@ -146,23 +120,22 @@ codesign --force --deep --sign - "/Applications/Dev Servers.app"
 open "/Applications/Dev Servers.app"
 ```
 
-Export `SDKROOT` in the same shell before `./build-app.sh`. That script runs `swift build -c release` again, and it inherits the variable. The macOS 27 Command Line Tools SDK fails while compiling FlickerDot: FlickerDot uses `@State`, and the SwiftUIMacros plugin is not part of the Command Line Tools (it ships with Xcode). The 26.5 SDK is the one this app is built against.
+Export `SDKROOT` in the same shell before `./build-app.sh`. That script runs `swift build -c release --product DevServers` again, and it inherits the variable. The package has no Sparkle or FlickerDot dependency. Onboarding was the only FlickerDot user, and it is gone, so the macOS 27 Command Line Tools failure on FlickerDot `@State` (missing SwiftUIMacros without Xcode) no longer applies. `SDKROOT` can stay on the 26.5 SDK.
 
-SwiftPM’s download of the Sparkle binary artifact can hang and never finish. If the build sits on that fetch, stop it, seed `~/Library/Caches/org.swift.swiftpm/artifacts` with the artifact, and rerun. Nothing in the project has to change for that.
+`./build-app.sh` already ad-hoc signs the bundle (`codesign --sign -`). The copy into `/Applications` needs a second ad-hoc signature because copying can break the seal. The executable inside the bundle is `DevServers`. Finder and the menu bar show **Dev Servers**. The app bundle is still `Dev Servers.app`.
 
-`./build-app.sh` already ad-hoc signs the bundle (`codesign --sign -`). The copy into `/Applications` needs a second ad-hoc signature because copying can break the seal. The executable inside the bundle is still named `WhatThePort` (the Swift package target). Finder and the menu bar show **Dev Servers**.
-
-The same build with Xcode, which has the SwiftUI macros plugin and does not need `SDKROOT`:
+The same build with Xcode:
 
 ```bash
 cd WhatThePort
-xcodebuild -scheme WhatThePort -destination 'platform=macOS' -configuration Release build
+unset SDKROOT
+xcodebuild -scheme DevServers -destination 'platform=macOS' -configuration Release build
 ./build-app.sh
 cp -R ".build/Dev Servers.app" /Applications/
 codesign --force --deep --sign - "/Applications/Dev Servers.app"
 ```
 
-`xcodebuild` resolves the package. `./build-app.sh` is still what produces `Dev Servers.app` with Sparkle and the resources in the right places. If you already exported `SDKROOT` for the Command Line Tools, unset it before `xcodebuild`. Quit any old WhatThePort first: this fork’s bundle id is `website.vibed.devservers`, so macOS treats it as a different app.
+`./build-app.sh` is what produces `Dev Servers.app` with the resources in the right places. If you already exported `SDKROOT` for the Command Line Tools, unset it before `xcodebuild`. Quit any old copy first: this fork’s bundle id is `website.vibed.devservers`, so macOS treats it as a different app.
 
 Check the classification logic without a Mac (Linux or Mac):
 
@@ -171,28 +144,27 @@ cd WhatThePort
 swift test --filter DevServersCoreTests
 ```
 
-On Linux that command rewrites `WhatThePort/Package.resolved`, because `Package.swift` omits Sparkle and FlickerDot there. Restore the lockfile afterwards (`git checkout -- WhatThePort/Package.resolved`) so a Mac build keeps the pinned Sparkle 2.10.0 and FlickerDot 0.2.0 revisions.
+`Package.resolved` has no pins. Sparkle and FlickerDot are not dependencies.
 
 ### What could not be compiled here
 
 This environment is Linux. `swift test --filter DevServersCoreTests` builds and runs `DevServersCore` only. The menu-bar target does not build here, so these files were not type-checked by a compiler:
 
-- `WhatThePort/Sources/WhatThePort/` (SwiftUI, AppKit, Sparkle, FlickerDot), including the new `BonjourBrowser.swift`, `PortalProber.swift`, `LaunchAgentController.swift`, `ServiceSections.swift`, and the `ServerMonitor` wiring
-- `NWBrowser` / `NetService` resolution, `launchctl`, and the popover layout
+- `WhatThePort/Sources/WhatThePort/` (SwiftUI and AppKit), including `BoardDiscovery.swift`, `BoardActions.swift`, `BonjourBrowser.swift`, `LaunchAgentController.swift`, `ServiceSections.swift`, and the `ServerMonitor` wiring
+- `dns-sd`, `launchctl`, `NSWorkspace`, and the popover layout
 
 `Package.swift` omits that target on Linux so the core tests can run. On a Mac the whole package builds.
 
 ### Behavior notes
 
-The Electron repo was not readable from the build environment, so the rules below follow the requested behavior and are covered by `DevServersCoreTests`. A few choices may not match that app line for line:
+The Electron repo was not readable from the build environment. The rules below follow the pasted `companions.js`, `hosts.js`, `mdns.js`, `probe.js`, `board.js`, `control.js`, `launch-agents.js`, `actions.js` and `known-helpers.js` excerpts, and `DevServersCoreTests` covers the pure parts.
 
-- A known helper is listed when one of its ports is listening, a matching LaunchAgent exists, or it is the LED Round Dial companion. The companion is “Missing companion” until `:5177` is the dial’s own process. A Vite server on `:5177` in another folder stays a normal dev server.
-- Every other plist in `~/Library/LaunchAgents` is a helper. Stopped ones are also in Needs attention. Sidecars (Claude/OpenCode forwarders, P1S mDNS, P1S menu bar) are shown only while running, under their role name, and never in Needs attention.
-- Spotify and `rapportd` become one row per process name, including `Spotify Helper` as its own row. Those rows are not stoppable.
-- Helper Stop/Start/Restart use `launchctl` when a plist is known. With no plist, Stop signals the listening pids and Start is disabled.
-- `wtp list` prints the new groups after the server table. `wtp list --json` is still the server array. The terminal UI’s keyboard list is still local dev servers; helpers and LAN are in the popover and in `wtp list`.
+- Known helpers are the curated list: Blackberry web, static and clip as three cards, DialDash, Droppic, Translator, P1S, Claude-mem and LED Round Dial. Port 5177 is the dial even when the process is Vite. HTTP LaunchAgents that are not on that list are added beside it. Agents with no port are not Stopped cards. Sidecars (Claude/OpenCode forwarders, P1S mdns, P1S menubar) show only while running.
+- Spotify and `rapportd` become one system row per process name. Those rows are not stoppable.
+- Kill runs `launchctl bootout gui/<uid>/<label>`, then SIGTERM, then SIGKILL, then `/bin/kill -9`. Start runs `launchctl bootstrap` and `kickstart -k`, or the helper’s start command when there is no agent. Open uses the card URL. Firmware-only ports 3232 and 6053 have no Open button.
+- There is no `wtp` command and no in-app updater.
 
-For updater-enabled releases, see [Automatic updates and release setup](WhatThePort/UPDATES.md). The release script packages the app as a notarized disk image and generates a signed update feed for the website.
+Signing and notarization for a local release are in [Release setup](WhatThePort/UPDATES.md). The release script packages a notarized disk image. It does not publish an update feed.
 
 To package a local build as the download's disk image, run `./make-dmg.sh` after `./build-app.sh`. The disk image file stays `WhatThePort.dmg`. The app inside it is `Dev Servers.app`.
 
@@ -238,10 +210,9 @@ use **Actions → Rebuild and deploy site and app → Run workflow** with `main`
 selected. Production runs are serialized; GitHub may replace a pending run with
 a newer one when several merges arrive during an active deployment.
 
-Until its signing secrets are configured, the workflow uses ad-hoc signing and
-builds without an update feed. Once they are, it signs with Developer ID,
-notarizes the app, and publishes a signed Sparkle feed under `/updates/`. See
-[Release from GitHub Actions](WhatThePort/UPDATES.md#release-from-github-actions).
+Until its signing secrets are configured, the workflow uses ad-hoc signing.
+Once they are, it signs with Developer ID and notarizes the app. There is no
+Sparkle feed. See [Release from GitHub Actions](WhatThePort/UPDATES.md#release-from-github-actions).
 
 ## About
 

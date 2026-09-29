@@ -37,7 +37,6 @@ struct PopoverRoot: View {
         .background(PopoverWindowFitter(height: contentHeight))
         .onAppear {
             monitor.start()
-            Usage.record(.popover)
             consumePendingRoute()
         }
         .onChange(of: monitor.pendingRoute) { _, _ in consumePendingRoute() }
@@ -50,7 +49,6 @@ struct PopoverRoot: View {
     }
 
     private func navigate(to newRoute: PopoverRoute) {
-        if case .detail = newRoute { Usage.record(.details) }
         withAnimation(.snappy(duration: 0.22)) { route = newRoute }
     }
 

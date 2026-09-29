@@ -66,7 +66,7 @@ Tell the agent how to check first. Add something like this to your project’s `
 ## Dev server
 
 Before starting a dev server, check whether one is already running for this folder:
-`lsof -nP -iTCP -sTCP:LISTEN` (or `wtp list --json` if WhatThePort is installed).
+`lsof -nP -iTCP -sTCP:LISTEN`.
 Reuse it if it is. Use the port in `$CONDUCTOR_PORT` if set, otherwise 3000.
 Never start a second copy on another port.
 ```
@@ -82,20 +82,6 @@ Two more things help:
 
 **Clean up** preselects servers from deleted worktrees and servers that have been idle for hours, so the leftovers from last week’s agent sessions go in one click. You can set it to ask first or to run automatically; servers that are leaking memory are never stopped automatically, and Postgres and Redis are protected by default.
 
-Agents can read the same list. `wtp list --json` prints every server with its port, folder, branch, status and the session that started it:
-
-```json
-[
-  {
-    "port": 3000,
-    "url": "http://localhost:3000",
-    "name": "marketing-site",
-    "branch": "feat/pricing",
-    "folder": "/Users/you/code/marketing-site",
-    "status": "running",
-    "session": { "kind": "Claude Code", "id": "3f2a…", "title": "Pricing page" }
-  }
-]
-```
+The popover and the detail view show each server’s port, folder, branch and the session that started it, so you can reuse a running server instead of starting a duplicate.
 
 [Download WhatThePort](/WhatThePort.dmg) for Apple Silicon Macs on macOS 14 or later.

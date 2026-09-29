@@ -1,5 +1,4 @@
 import AppKit
-import FlickerDot
 import SwiftUI
 
 /// A 5×5 dot-matrix glyph. `#` is lit, `a` is lit amber, `.` is unlit.
@@ -63,31 +62,6 @@ extension DotGlyph {
         DotGlyph(rows: [".....", "...#.", "#.#..", ".#...", "....."]),
         DotGlyph(rows: ["....#", "...#.", "#.#..", ".#...", "....."]),
     ]
-}
-
-/// Plays dot glyph frames through the FlickerDot player: a hard cut every
-/// 150ms, held on the first frame when Reduce Motion is on. A single frame
-/// draws as a still glyph.
-struct DotSpinner: View {
-    var frames: [DotGlyph] = DotGlyph.loading
-    var size: CGFloat = 16
-    var color: Color = Theme.text1
-    var unlitColor: Color?
-
-    var body: some View {
-        FlickerSpinner(grids: frames.map(\.flickerFrame), onColor: color, offColor: unlitColor ?? color.opacity(0.12),
-                       variant: .grid5x5, size: size)
-    }
-}
-
-extension DotGlyph {
-    /// The glyph as the inner 5×5 of Flicker's flat 7×7 frame.
-    var flickerFrame: FlickerFrame {
-        (0..<Flicker.dotsFull).map { i in
-            let row = i / Flicker.colsFull - 1, column = i % Flicker.colsFull - 1
-            return (0..<5).contains(row) && (0..<5).contains(column) && dot(row: row, column: column) != "."
-        }
-    }
 }
 
 /// SwiftUI rendering of a dot glyph, used in the popover's empty state.

@@ -70,6 +70,6 @@ The commands above answer the question once. If you run more than a couple of se
 - uptime, memory and CPU for the whole process tree, with ten minutes of history
 - the Claude Code, Codex or Conductor session that started it, if any
 
-Press ⌥⌘P to open it, click a server to open it in the browser, or stop it. Prefer the terminal? `wtp` shows the same list there, and `wtp list --json` prints it for scripts.
+Press ⌥⌘P to open it, click a server to open it in the browser, or stop it. Open, Start and Kill stay on the card.
 
 [Download WhatThePort](/WhatThePort.dmg) for Apple Silicon Macs on macOS 14 or later, or [try the interactive demo](/).

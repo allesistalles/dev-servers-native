@@ -26,7 +26,6 @@ enum StatusItemMenu {
         let servers = NSMenu()
         for server in monitor.servers {
             servers.addItem(ActionItem("localhost:\(String(server.port))  \(server.project.branch ?? server.project.name)") {
-                Usage.record(.openBrowser)
                 NSWorkspace.shared.open(server.url)
             })
         }
@@ -38,9 +37,6 @@ enum StatusItemMenu {
         let settings = ActionItem(L10n.text("Settings…"), action: openSettings)
         settings.keyEquivalent = ","
         menu.addItem(settings)
-        let updates = ActionItem(L10n.text("Check for Updates…")) { AppUpdater.shared.checkForUpdates() }
-        updates.isEnabled = AppUpdater.shared.canCheckForUpdates
-        menu.addItem(updates)
 
         let feedback = NSMenuItem(title: L10n.text("Send Feedback"), action: nil, keyEquivalent: "")
         feedback.submenu = NSMenu()

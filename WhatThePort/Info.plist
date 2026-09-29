@@ -9,7 +9,7 @@
     <key>CFBundleDisplayName</key>
     <string>Dev Servers</string>
     <key>CFBundleExecutable</key>
-    <string>WhatThePort</string>
+    <string>DevServers</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -23,14 +23,6 @@
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>LSUIElement</key>
-    <true/>
-    <key>SUEnableAutomaticChecks</key>
-    <true/>
-    <key>SUAutomaticallyUpdate</key>
-    <true/>
-    <key>SUVerifyUpdateBeforeExtraction</key>
-    <true/>
-    <key>SURequireSignedFeed</key>
     <true/>
 </dict>
 </plist>

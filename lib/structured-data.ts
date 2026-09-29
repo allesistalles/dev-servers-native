@@ -11,7 +11,7 @@ export function softwareApplication() {
     '@type': 'SoftwareApplication',
     '@id': `${SITE_URL}/#app`,
     name: SITE_NAME,
-    alternateName: ['What The Port', 'wtp'],
+    alternateName: ['What The Port', 'Dev Servers'],
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     downloadUrl: `${SITE_URL}/WhatThePort.dmg`,
@@ -34,7 +34,7 @@ export function softwareApplication() {
       'Memory leak alerts at 2 GB or 500 MB growth in ten minutes',
       'Clean up stops idle servers and servers from deleted git worktrees',
       'Stops and restarts whole process trees',
-      'wtp terminal UI and wtp list --json for scripts and agents',
+      'Board with Open, Start and Kill for helpers, LaunchAgents and LAN devices',
       'Global shortcut ⌥⌘P',
     ],
   }

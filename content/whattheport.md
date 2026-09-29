@@ -18,14 +18,14 @@
 - **Clean up.** Preselects servers from deleted git worktrees or idle for hours, then stops each whole process tree in bulk. Postgres, Redis, MongoDB and MySQL are protected by default. Cleanup can be Off, Ask or Automatic; leaking servers are never stopped automatically.
 - **Stop and restart.** Stop sends SIGTERM to the whole process tree, then SIGKILL after a short delay. Restart reruns the original command in the same folder.
 - **Previews and pull requests (optional).** A Vercel preview button and the branch’s pull request, through the GitHub CLI you’re already signed in to.
-- **Terminal UI.** `wtp` shows the same servers, details and Clean up in your terminal. `wtp list --json` prints them as JSON for scripts and coding agents.
 - **Global shortcut.** ⌥⌘P opens the popover.
-- **Interface language.** English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian. Select a language on the first onboarding screen or in Settings → General → Language; changes apply immediately. System default follows the Mac’s preferred languages, with English fallback. Hebrew uses right-to-left layout. `wtp language` reads the shared app preference; `wtp language ja` sets it; `wtp language system` restores automatic selection. The TUI, command help and JSON remain English; user data and commands stay unchanged. The first onboarding screen previews sample Servers rows in the chosen language. The site’s Languages section shows the Servers popover demo in each language, using the app’s own translations.
+- **Interface language.** English, German, French, Spanish, Simplified Chinese, Hebrew, Japanese and Ukrainian. Select a language in Settings → General → Language; changes apply immediately. System default follows the Mac’s preferred languages, with English fallback. Hebrew uses right-to-left layout. The site’s Languages section shows the Servers popover demo in each language, using the app’s own translations.
 - **Native.** Written in Swift. No Electron, no Dock icon. Light and dark mode.
-- **Helpers.** Known local helpers stay in the list even when they are stopped: Blackberry (:8888, :8899, :8900), DialDash (:7878), Droppic (:8787), P1S bridge (:8765), Claude-mem (:37777) and the LED Round Dial companion (:5177). The popover also lists plists in `~/Library/LaunchAgents`. Stop runs `launchctl bootout` so launchd does not respawn the job. Start runs `launchctl bootstrap` and `kickstart`. Restart does both.
-- **Needs attention.** Stopped helpers, the missing LED Round Dial companion, and firmware-only OTA/ESPHome devices. A row can sit in this group and in Helpers or On the network at the same time.
-- **On the network.** Bonjour browse for `_http._tcp`, `_https._tcp`, `_esphomelib._tcp`, `_arduino._tcp`, `_home-assistant._tcp` and `_hap._tcp`. Seed host Monster Settings (`monster.local`, `192.168.0.148`) still opens when `.local` lookup fails, using the IPv4 from Bonjour resolution or that seed address. Portal ports are probed for an openable web UI. Firmware-only devices are shown and flagged.
-- **Noise.** Claude and OpenCode forwarders, and the P1S mDNS and menu-bar sidecars, are named by role and left out of Stopped and Needs attention. Spotify and rapportd collapse to one row per process, with the ports listed.
+- **Board.** Overview, All, Local, LAN, Stopped and System. Open, Start, Restart and Kill stay on the card. Known helpers that are not listening show as Stopped: Blackberry web (:8888), Blackberry static (:8899), Blackberry clip (:8900), DialDash (:7878), Droppic (:8787), P1S (:8765), Claude-mem (:37777) and the LED Round Dial companion (:5177). HTTP LaunchAgents in `~/Library/LaunchAgents` join that list. Agents with no port do not become Stopped cards.
+- **Controls.** Kill runs `launchctl bootout gui/<uid>/<label>`, then SIGTERM, then SIGKILL, then `/bin/kill -9` if the port is still listening. Start runs `launchctl bootstrap gui/<uid> <plist>` and `launchctl kickstart -k gui/<uid>/<label>`, or the helper’s start command when there is no agent. Open uses the card URL. Firmware-only ports 3232 and 6053 have no Open button.
+- **Needs attention.** Stopped helpers and firmware-only devices whose companion is not running.
+- **On the network.** Browse `_http._tcp`, `_https._tcp`, `_esphomelib._tcp`, `_arduino._tcp`, `_home-assistant._tcp` and `_hap._tcp`. Seed hosts include Monster Settings (`monster.local`). Probes are HEAD then GET on the pinned IPv4 with the original Host header. Home Assistant aliases collapse to one card. `_hap` is dropped unless the port is HTTP.
+- **Noise.** Claude and OpenCode forwarders, and the P1S mdns and menubar sidecars, are named by role and left out of Stopped and Needs attention. Spotify and rapportd collapse to one system row per process.
 
 The menu-bar app in this fork is **Dev Servers** (bundle id `website.vibed.devservers`). It is based on WhatThePort by Tomjohn, MIT. Source: https://github.com/allesistalles/dev-servers-native and https://github.com/tomjohndesign/what-the-port.
 
@@ -35,20 +35,7 @@ The menu-bar app in this fork is **Dev Servers** (bundle id `website.vibed.devse
 2. Drag WhatThePort onto the Applications shortcut, then open it from Applications.
 3. Start a dev server, then click the dot grid in the menu bar or press ⌥⌘P.
 
-The prebuilt download is for Apple Silicon Macs running macOS 14 Sonoma or later. Updates are signed and install automatically when you quit. To build from source you need Swift 5.9 or later: `cd WhatThePort && swift build`.
-
-## The wtp command
-
-Onboarding offers to install `wtp`, or click Install… in Settings → General → Terminal. It links `/usr/local/bin/wtp` to the app.
-
-```
-wtp               Browse, open and stop servers
-wtp list          Print servers and exit
-wtp list --json   Print servers as JSON
-wtp --version     Print the version
-```
-
-`wtp list --json` prints an array of servers. Each has `port`, `url`, `pid`, `name`, `branch`, `framework`, `folder`, `command`, `startedAt`, `memoryBytes`, `cpuPercent`, `status` (`running`, `attention` or `idle`), `protected`, `processes` and, when an agent started it, `session` (`kind`, `id`, `title`).
+The prebuilt download is for Apple Silicon Macs running macOS 14 Sonoma or later. To build from source you need Swift 5.9 or later: `cd WhatThePort && swift build --product DevServers`.
 
 ## How it works
 
@@ -60,7 +47,7 @@ Frameworks it recognizes include Next.js, Nuxt, Remix, Astro, SvelteKit, Vite, E
 
 ## Privacy
 
-There’s no account and no analytics SDK. Everything the app shows comes from your Mac and stays there. It only goes online to check for updates, to send an anonymous once-a-day count of which features were used (no identifiers, and you can turn it off), and, if you turn them on, to look up Vercel previews and pull requests through the GitHub CLI.
+There’s no account and no analytics SDK. Everything the app shows comes from your Mac and stays there. It only goes online, if you turn them on, to look up Vercel previews and pull requests through the GitHub CLI.
 
 ## FAQ
 
@@ -82,7 +69,7 @@ Not unless you choose to. Postgres, Redis, MongoDB and MySQL are protected from 
 
 ### Can a coding agent use it?
 
-Yes. `wtp list --json` gives agents a machine-readable list of every server, its port, folder, branch, status and the session that started it, so an agent can reuse a running server instead of starting a duplicate on the next port.
+Yes. The popover and the detail view show each server’s port, folder, branch, status and the session that started it, so you can reuse a running server instead of starting a duplicate on the next port.
 
 ### Where is the menu bar icon?
 

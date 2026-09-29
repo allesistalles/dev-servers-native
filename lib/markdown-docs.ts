@@ -29,13 +29,13 @@ export function llmsTxt() {
 
 > ${SITE_DESCRIPTION}
 
-WhatThePort is a native Swift menu bar app for Apple Silicon Macs on macOS 14 or later. It's free, open source (MIT) and needs no account. It also installs a \`wtp\` terminal command; \`wtp list --json\` prints every running dev server (port, url, pid, name, branch, framework, folder, command, memory, CPU, status and the agent session that started it) for scripts and coding agents.
+WhatThePort is a native Swift menu bar app for Apple Silicon Macs on macOS 14 or later. It's free, open source (MIT) and needs no account. This fork's menu-bar app is Dev Servers. The popover shows each server's port, project, branch, memory and the agent session that started it, plus helpers and LAN devices with Open, Start and Kill on the card.
 
 Every page on this site is also available as Markdown: add \`.md\` to its URL, or request it with \`Accept: text/markdown\`.
 
 ## Product
 
-- [WhatThePort overview](${SITE_URL}/index.md): features, install, the wtp command and its JSON output, how it works, privacy and FAQ
+- [WhatThePort overview](${SITE_URL}/index.md): features, install, the board, how it works, privacy and FAQ
 - [Download for macOS](${SITE_URL}/WhatThePort.dmg): the latest signed release, as a disk image
 - [Source code on GitHub](https://github.com/tomjohndesign/what-the-port): README, Swift source and releases
 

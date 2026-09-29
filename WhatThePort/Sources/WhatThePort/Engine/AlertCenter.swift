@@ -41,8 +41,6 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
             UNNotificationAction(identifier: Action.snooze, title: L10n.text("Snooze"), options: []),
         ]
         center.setNotificationCategories([UNNotificationCategory(identifier: Action.category, actions: actions, intentIdentifiers: [])])
-        // Before onboarding, the Leaks step asks with context instead.
-        guard UserDefaults.standard.bool(forKey: Preferences.onboarded) else { return }
         Task {
             let settings = await center.notificationSettings()
             guard settings.authorizationStatus == .notDetermined else { return }
@@ -109,7 +107,6 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         content.userInfo = ["port": server.port]
         let request = UNNotificationRequest(identifier: "\(kind.rawValue)-\(server.port)-\(server.rootPid)", content: content, trigger: nil)
         UNUserNotificationCenter.current().add(request)
-        Usage.record(.memoryAlert)
     }
 
     private func announceStartStop(_ servers: [Server]) {
@@ -140,28 +137,6 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         content.body = names + " · " + Format.bytesString(servers.reduce(0) { $0 + $1.memory }) + (stopped ? L10n.text(" freed") : "")
         if servers.count == 1 { content.userInfo = ["port": servers[0].port] }
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "cleanup-\(Date().timeIntervalSince1970)", content: content, trigger: nil))
-    }
-
-    /// Tells people who updated to 2.5 about `wtp`, once. New installs meet it in
-    /// onboarding instead, and clicking opens Settings, where it's installed.
-    func announceTUI() {
-        let defaults = UserDefaults.standard
-        guard isAvailable, defaults.bool(forKey: Preferences.onboarded), !defaults.bool(forKey: Preferences.announcedTUI) else { return }
-        defaults.set(true, forKey: Preferences.announcedTUI)
-        Task {
-            // Let launch after an update settle first.
-            try? await Task.sleep(for: .seconds(3))
-            let center = UNUserNotificationCenter.current()
-            let status = await center.notificationSettings().authorizationStatus
-            guard status == .authorized || status == .provisional else { return }
-            let content = UNMutableNotificationContent()
-            content.title = L10n.text("WTP now has TUI")
-            content.body = CommandLineTool.state == .installed
-                ? L10n.text("Type wtp in any terminal to see and stop your servers.")
-                : L10n.text("See and stop your servers from any terminal. Click to add the wtp command.")
-            content.userInfo = ["announcement": "tui"]
-            try? await center.add(UNNotificationRequest(identifier: "announcement-tui", content: content, trigger: nil))
-        }
     }
 
     private func context(for server: Server) -> String {
@@ -199,7 +174,6 @@ final class AlertCenter: NSObject, UNUserNotificationCenterDelegate {
         switch action {
         case Action.stop:
             if let server = monitor.server(port: port) {
-                Usage.record(.stop)
                 monitor.stop(server)
             }
         case Action.snooze:
