@@ -9,8 +9,8 @@ import { DotMatrix } from './DotMatrix'
 import { DotGrid } from './icons'
 import { Screen } from './Screen'
 import { DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS, TERMINAL, TRANSLATIONS } from './sections'
+import { useHeadlineLanguage } from './LanguageHeadline'
 import { TerminalWindow } from './Terminal'
-import { Translations } from './Translations'
 
 // Scene geometry, in the 2560×1600 space the room photos and laptop were composed in (Paper boards 22–26).
 const SCENE = { width: 2560, height: 1600 }
@@ -162,9 +162,7 @@ function DeskStage({ stars }: { stars: number | null }) {
             <div className={styles.screenMask}>
               <Screen active={active} stars={stars} onNavigate={navigate} />
             </div>
-            <div className={styles.notch}>
-              <span />
-            </div>
+            <div className={styles.camera} />
             <div className={styles.glare} />
           </div>
         </div>
@@ -178,9 +176,10 @@ function DeskStage({ stars }: { stars: number | null }) {
 
 function StandalonePopover({ section, zoom }: { section: number; zoom: number }) {
   const demo = useDemo(section)
+  const language = useHeadlineLanguage()
   return (
     <div style={{ zoom }}>
-      <AppPopover demo={demo} />
+      <AppPopover demo={demo} language={section === TRANSLATIONS ? language : 'en'} />
     </div>
   )
 }
@@ -212,8 +211,6 @@ function StackedPage({ stars }: { stars: number | null }) {
           >
             {index === GET_IT ? (
               <DotMatrix size={160} />
-            ) : index === TRANSLATIONS ? (
-              <Translations />
             ) : index === TERMINAL ? (
               <div style={{ zoom: Math.min(1, zoom * (400 / 500)) }}>
                 <TerminalWindow />

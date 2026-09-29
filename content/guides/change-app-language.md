@@ -22,7 +22,7 @@ WhatThePort’s native Mac interface is available in eight languages:
 
 ## Choose during setup or later
 
-On the first onboarding screen, use the **Language** picker. The interface changes immediately, so you can continue setup in that language. Later, open **Settings → General → Language** to change it again.
+On the first onboarding screen, use the **Language** picker. The interface changes immediately, and a preview beneath the picker shows two sample server rows as they’ll appear in the menu bar, so you can continue setup in that language. Later, open **Settings → General → Language** to change it again.
 
 **System default** uses the first supported language in your Mac’s preferred language list, with English as the fallback. Traditional Chinese is not treated as Simplified Chinese. Hebrew uses a right-to-left layout.
 
@@ -52,7 +52,7 @@ Use any code from the table above. The terminal’s **?** help screen also shows
 
 Labels, settings, onboarding, menus, alerts and accessibility copy are translated. Project names, branches, paths, commands and session identifiers remain exactly as they are. Changing language does not stop or restart your development servers.
 
-The `wtp` terminal interface stays in English, including command help and JSON field names. The website is also in English; its [Translations section](/#translations) previews the actual native onboarding screen in each language.
+The `wtp` terminal interface stays in English, including command help and JSON field names. The website is also in English; its [Languages section](/#translations) shows the Servers popover demo in each language, using the app’s own translations.
 
 The translations are open source. If a phrase could be clearer, [suggest a correction on GitHub](https://github.com/tomjohndesign/what-the-port). See [the localization notes](https://github.com/tomjohndesign/what-the-port/blob/main/LOCALIZATION.md) for resource files and testing details.
 

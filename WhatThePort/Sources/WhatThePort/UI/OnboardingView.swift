@@ -141,6 +141,7 @@ struct OnboardingView: View {
                     .labelsHidden()
                     .frame(maxWidth: 210)
                 }
+                LanguagePreview()
                 RowDivider()
                 OnboardingRow(title: monitor.servers.isEmpty ? L10n.text("No servers running right now") : L10n.format("Found %d %@ running", monitor.servers.count, L10n.counted("server", "servers", count: monitor.servers.count))) {
                     Text(monitor.servers.prefix(3).map { ":\($0.port)" }.joined(separator: " ") + (monitor.servers.count > 3 ? " …" : ""))
@@ -388,6 +389,59 @@ private struct OnboardingRow<Control: View>: View {
         .padding(.vertical, caption == nil ? 10 : 14)
         .frame(minHeight: caption == nil ? 49 : 64)
         .accessibilityElement(children: .contain)
+    }
+}
+
+/// Two sample Servers rows in the chosen language, laid out like ServerRow.
+/// Mock data only, the same servers as the website demo, and nothing is clickable.
+private struct LanguagePreview: View {
+    private static let megabyte: UInt64 = 1_048_576
+
+    var body: some View {
+        VStack(spacing: 0) {
+            row(port: 3000, status: .running, colorIndex: 0, name: "menubar port monitor", memory: 1240 * Self.megabyte,
+                spark: [5, 6, 5.5, 8, 7, 10, 9, 11, 10, 12, 11.5, 13]) {
+                HStack(spacing: 5) {
+                    AgentGlyph(kind: .claudeCode, size: 10)
+                    Text("what the port · " + L10n.format("up %@", L10n.duration(3 * 60 * 60, short: true))).lineLimit(1)
+                }
+                .foregroundStyle(Theme.text2)
+            }
+            row(port: 6006, status: .attention, colorIndex: 3, name: "tokens v2", memory: 2810 * Self.megabyte,
+                spark: [2, 2.5, 3.5, 4, 5.5, 6, 8, 9, 11, 12.5, 14, 16]) {
+                Text(L10n.format("+%@ in %@", Format.bytesString(1126 * Self.megabyte), L10n.duration(10 * 60)))
+                    .lineLimit(1)
+                    .foregroundStyle(Theme.amber)
+            }
+        }
+        .padding(4)
+        .background(Theme.popoverBackground, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+        .padding(EdgeInsets(top: 0, leading: 8, bottom: 8, trailing: 8))
+        .allowsHitTesting(false)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func row<Context: View>(port: Int, status: ServerStatus, colorIndex: Int, name: String, memory: UInt64,
+                                    spark: [Double], @ViewBuilder context: () -> Context) -> some View {
+        let attention = status == .attention
+        return HStack(spacing: 0) {
+            PortLabel(port: port, status: status, color: Theme.portColor(at: colorIndex))
+                .frame(width: 58, alignment: .leading)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(name).font(Theme.bodyMedium).foregroundStyle(Theme.text1).lineLimit(1)
+                context().font(Theme.caption)
+            }
+            .padding(.trailing, 10)
+            Spacer(minLength: 0)
+            Sparkline(values: spark, color: attention ? Theme.amber : Theme.text1.opacity(0.7), lineWidth: attention ? 1.5 : 1.25)
+                .frame(width: 40, height: 18)
+            Text(Format.bytesString(memory))
+                .font(Theme.mono)
+                .foregroundStyle(attention ? Theme.amber : Theme.text1.opacity(0.85))
+                .frame(width: 64, alignment: .trailing)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
     }
 }
 

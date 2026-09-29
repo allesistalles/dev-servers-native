@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
 import styles from './landing.module.css'
+import type { AppLanguageCode } from './languages'
 
-const HEADLINES = [
+const HEADLINES: { language: AppLanguageCode; text: string }[] = [
   { language: 'en', text: 'Your language.' },
   { language: 'ja', text: 'あなたの言語。' },
   { language: 'de', text: 'Deine Sprache.' },
@@ -14,9 +15,26 @@ const HEADLINES = [
   { language: 'es', text: 'Tu idioma.' },
 ]
 
+// The headline's current language, shared with the Languages section's popover.
+let current = 0
+const listeners = new Set<() => void>()
+const subscribe = (listener: () => void) => {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+const advance = () => {
+  current = (current + 1) % HEADLINES.length
+  listeners.forEach((listener) => listener())
+}
+const useIndex = () => useSyncExternalStore(subscribe, () => current, () => 0)
+
+export const useHeadlineLanguage = () => HEADLINES[useIndex()].language
+
 export function LanguageHeadline() {
   const ref = useRef<HTMLHeadingElement>(null)
-  const [index, setIndex] = useState(0)
+  const index = useIndex()
 
   useEffect(() => {
     const element = ref.current
@@ -27,7 +45,7 @@ export function LanguageHeadline() {
     const update = () => {
       clearInterval(timer)
       if (visible && !document.hidden && !motion.matches) {
-        timer = setInterval(() => setIndex((value) => (value + 1) % HEADLINES.length), 2800)
+        timer = setInterval(advance, 2800)
       }
     }
     const observer = new IntersectionObserver(([entry]) => {

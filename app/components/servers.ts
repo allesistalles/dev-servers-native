@@ -1,4 +1,5 @@
 import type { ColonState } from './icons'
+import type { Localizer } from './languages'
 
 // Sample data for the marketing demo. Keep presentation aligned with the native SwiftUI views.
 // Memory values use binary MB, matching Theme.swift / Format.
@@ -22,6 +23,8 @@ export type Server = {
   processes: { command: string; memory: number }[]
   info: [label: string, value: string][]
   cleanUp?: { reason: CleanUpReason; note: string; suggested: boolean }
+  // The popover's row context, clean-up reason and running time, in the app's own phrases.
+  lines: (l: Localizer) => { context: string; note?: string; running: string }
 }
 
 export const SERVERS: Server[] = [
@@ -35,6 +38,7 @@ export const SERVERS: Server[] = [
     cpuNote: 'spikes on rebuild',
     uptime: 'up 3h 12m',
     context: { agent: 'claude', text: 'what the port · up 3h' },
+    lines: (l) => ({ context: `what the port · ${l.format('up %@', l.duration(180, true))}`, running: l.duration(192) }),
     session: { agent: 'claude', title: 'Dot-grid menu bar icon', id: '68c8fda6' },
     chart: 'steady',
     spark: 'M0 13 L4 12 L8 12.5 L12 10 L16 11 L20 8 L24 9 L28 7 L32 8 L36 6 L40 6.5 L44 5',
@@ -62,6 +66,7 @@ export const SERVERS: Server[] = [
     cpuNote: 'quiet',
     uptime: 'up 1d 4h',
     context: { text: 'tomjohn.design · up 1d' },
+    lines: (l) => ({ context: `tomjohn.design · ${l.format('up %@', l.duration(1680, true))}`, running: l.duration(1680) }),
     chart: 'steady',
     spark: 'M0 10 L4 10.5 L8 9.5 L12 10 L16 9 L20 10 L24 9.5 L28 10 L32 9 L36 9.5 L40 9 L44 9.5',
     processes: [
@@ -87,6 +92,11 @@ export const SERVERS: Server[] = [
     cpuNote: 'idle since 8:31',
     uptime: 'idle 5h',
     context: { agent: 'codex', text: 'paper plugins · idle 5h' },
+    lines: (l) => ({
+      context: `paper plugins · ${l.format('idle %@', l.duration(300, true))}`,
+      note: l.format('Idle %@ · no connections', l.duration(300, true)),
+      running: l.duration(300),
+    }),
     session: { agent: 'codex', title: 'SVG export for frames', id: 'c7e20b91' },
     chart: 'flat',
     spark: 'M0 13 L4 13 L8 12.5 L12 13 L16 13 L20 13 L24 12.5 L28 13 L32 13 L36 13 L40 13 L44 13',
@@ -114,6 +124,11 @@ export const SERVERS: Server[] = [
     cpuNote: 'climbing since 1:14',
     uptime: 'up 2h 40m',
     context: { text: '+1.1 GB in 10 min', tone: 'amber' },
+    lines: (l) => ({
+      context: l.format('+%@ in %@', '1.1 GB', l.text('10 min')),
+      note: l.format('Leaking · +%@', '1.1 GB'),
+      running: l.duration(160),
+    }),
     session: { agent: 'claude', title: 'Tokens v2 migration', id: 'a3f19c07' },
     chart: 'leaking',
     spark: 'M0 16 L4 15.5 L8 14.5 L12 14 L16 12.5 L20 12 L24 10 L28 9 L32 7 L36 5.5 L40 4 L44 2',
@@ -142,6 +157,11 @@ export const SERVERS: Server[] = [
     cpuNote: 'no requests in 2d',
     uptime: 'idle 2d',
     context: { text: 'Worktree deleted · idle 2d' },
+    lines: (l) => ({
+      context: l.format('Worktree deleted · idle %@', l.duration(2880, true)),
+      note: l.text('Worktree deleted'),
+      running: l.duration(2880),
+    }),
     chart: 'flat',
     spark: 'M0 12 L44 12',
     processes: [{ command: 'uvicorn main:app', memory: 96 }],
