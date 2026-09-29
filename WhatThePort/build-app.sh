@@ -28,7 +28,7 @@ cp "${BIN_DIR}/${BINARY_NAME}" "${CONTENTS_DIR}/MacOS/"
 cp .build/configured-Info.plist "${CONTENTS_DIR}/Info.plist"
 cp -R "Resources/Fonts" "${CONTENTS_DIR}/Resources/"
 cp "Resources/AppIcon.icns" "${CONTENTS_DIR}/Resources/"
-ditto "${BIN_DIR}/DevServers_DevServers.bundle" "${CONTENTS_DIR}/Resources/DevServers_DevServers.bundle"
+ditto "${BIN_DIR}/WhatThePort_DevServers.bundle" "${CONTENTS_DIR}/Resources/WhatThePort_DevServers.bundle"
 
 IDENTITY="${CODE_SIGN_IDENTITY:--}"
 SIGN_OPTIONS=(--force --sign "${IDENTITY}")

@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Darwin
 import DevServersCore
@@ -345,7 +346,7 @@ final class ServerMonitor: ObservableObject {
         var apps: [AppMemory]
     }
 
-    private static func performScan(
+    nonisolated private static func performScan(
         engine: ScanEngine,
         appUsage: AppUsageScanner,
         cpuSampler: SystemCPUSampler,
@@ -401,7 +402,7 @@ final class ServerMonitor: ObservableObject {
         )
     }
 
-    private static func localServer(from server: Server) -> LocalServer {
+    nonisolated private static func localServer(from server: Server) -> LocalServer {
         LocalServer(
             url: server.url.absoluteString,
             pid: Int(server.pid),
@@ -415,7 +416,7 @@ final class ServerMonitor: ObservableObject {
         )
     }
 
-    private static func systemLocals(_ sockets: SocketScan) -> [LocalServer] {
+    nonisolated private static func systemLocals(_ sockets: SocketScan) -> [LocalServer] {
         var grouped: [String: (name: String, pid: Int, ports: Set<Int>)] = [:]
         for socket in sockets.listening where SystemNoise.isSystemListener(socket.command) {
             let key = socket.command.lowercased()
