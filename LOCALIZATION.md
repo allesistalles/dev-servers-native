@@ -12,7 +12,7 @@ The TUI and machine-readable output remain English. `wtp language` reads the sha
 
 Each language has a complete `Sources/WhatThePort/Resources/<code>.lproj/Localizable.strings` table inside `WhatThePort/`. English phrases are the keys and fallback values. Keep brand names and command examples unchanged. Preserve every format argument’s type and position. When rearranging arguments, number **all** arguments explicitly (for example `%2$@` before `%1$@`). Avoid constructing sentences by joining independently translated fragments.
 
-Register new languages in `InterfaceLanguage`, the terminal’s help and validation message, and `app/components/languages.ts`. Add a real onboarding screenshot to `public/languages/`, update marketing copy and the language guide. `swift build` processes the resources and `./build-app.sh` embeds the resource bundle in the app. The resolver uses the bundle’s declared localization spelling, including SwiftPM’s normalized `zh-hans` directory.
+Register new languages in `InterfaceLanguage`, the terminal’s help and validation message, and `app/components/languages.ts`. Add it to `LANGUAGES` in `scripts/app-strings.mjs` and run `node scripts/app-strings.mjs`, then update marketing copy and the language guide. `swift build` processes the resources and `./build-app.sh` embeds the resource bundle in the app. The resolver uses the bundle’s declared localization spelling, including SwiftPM’s normalized `zh-hans` directory.
 
 The initial Simplified Chinese translation and resource architecture come from [PR #32](https://github.com/tomjohndesign/what-the-port/pull/32). The additional translations are an initial pass; fluent-speaker review is welcome, especially for longer explanatory copy and grammar around counts. Portuguese, Korean and Traditional Chinese are useful candidates for a later expansion, with their own complete resource tables and review.
 
@@ -20,7 +20,9 @@ The initial Simplified Chinese translation and resource architecture come from [
 
 From `WhatThePort/`, run `swift test`. Tests load all eight bundled tables, check exact key coverage and placeholder positions, test language preference fallback, and exercise terminal input and column widths for Latin, Hebrew, CJK and Cyrillic text.
 
-`WhatThePort --snapshot-onboarding <dir> --ui-language ja --appearance dark` renders the welcome screen plus deterministic loading, permission and success states without persisting preferences or changing macOS permissions. `--snapshot <dir> --ui-language he` also captures server details, cleanup and every settings pane. The site’s language selector previews these native screenshots; the existing interactive server and terminal demos remain English.
+`WhatThePort --snapshot-onboarding <dir> --ui-language ja --appearance dark` renders the welcome screen plus deterministic loading, permission and success states without persisting preferences or changing macOS permissions. `--snapshot <dir> --ui-language he` also captures server details, cleanup and every settings pane. The first onboarding screen previews two sample Servers rows in the chosen language, from fixed mock data.
+
+The website’s Languages section shows its interactive Servers popover in whichever language the rotating headline is showing, using the app’s own translations. `scripts/app-strings.mjs` copies the phrases the popover needs from `Localizable.strings` into `app/components/appStrings.json`; builds fail if that file is stale. The other website demos and the terminal demo remain English.
 
 On Command Line Tools installations where Swift Testing is outside the default search path, use:
 

@@ -101,7 +101,7 @@ The native app supports **English, German, French, Spanish, Simplified Chinese, 
 
 [Preview all eight languages](https://whattheport.dev/#translations) or read [Localization](LOCALIZATION.md) for translation and build details.
 
-![Native onboarding in Japanese, with the language picker on the first step](public/languages/onboarding-ja.png)
+![Native onboarding in Japanese: the language picker on the first step, with a preview of Servers rows](docs/images/onboarding-ja.png)
 
 ### Settings
 

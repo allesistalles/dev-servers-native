@@ -115,26 +115,16 @@
   background-color: #0a0c11;
 }
 
-.notch {
+.camera {
   position: absolute;
-  left: 591.5px;
-  top: 20.02px;
-  width: 163.8px;
-  height: 27.3px;
-  border-radius: 0 0 9.1px 9.1px;
-  background-color: #08080a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-
-.notch span {
+  left: 669.76px;
+  top: 6.37px;
   width: 7.28px;
   height: 7.28px;
   border-radius: 50%;
   background-color: #16181d;
   box-shadow: inset 0 0 0 1.4px #22252c;
+  pointer-events: none;
 }
 
 .glare {
@@ -978,8 +968,8 @@
 }
 
 .summaryDetail {
-  margin-left: auto;
-  text-align: right;
+  margin-inline-start: auto;
+  text-align: end;
 }
 
 .cpuToggle {
@@ -1084,7 +1074,7 @@
   align-items: center;
   padding: 9px 10px;
   border-radius: 9px;
-  text-align: left;
+  text-align: start;
 }
 
 .serverRow[data-interactive] {
@@ -1114,6 +1104,14 @@
   display: none;
 }
 
+.portLabel {
+  width: 58px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  direction: ltr;
+}
+
 .rowPort {
   width: 49px;
   flex-shrink: 0;
@@ -1127,7 +1125,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-right: 10px;
+  padding-inline-end: 10px;
 }
 
 .rowTop {
@@ -1195,7 +1193,7 @@
 .rowMemory {
   width: 64px;
   flex-shrink: 0;
-  text-align: right;
+  text-align: end;
   font-family: 'Geist Mono', ui-monospace, monospace;
   color: #f5f5f7d9;
 }
@@ -1359,7 +1357,7 @@
   background-color: #f5f5f7;
 }
 
-.serverRow > .checkbox { margin-right: 12px; }
+.serverRow > .checkbox { margin-inline-end: 12px; }
 
 .checkbox {
   width: 16px;
@@ -1879,47 +1877,6 @@
 
 .emptyState { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 28px 0; }
 
-/* Actual native onboarding previews, shared by desktop and mobile. */
-.translations {
-  width: min(340px, calc(100% - 32px));
-  margin: 24px auto;
-  color: #f5f5f7;
-}
-.translations[hidden] { display: none; }
-.translations figcaption {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-  font-size: 12px;
-}
-.translations select {
-  min-width: 130px;
-  max-width: 54%;
-  padding: 7px 10px;
-  border: 1px solid #ffffff30;
-  border-radius: 7px;
-  background: #28282b;
-  color: #f5f5f7;
-  font: inherit;
-}
-.translations img {
-  display: block;
-  width: 100%;
-  height: auto;
-  border-radius: 13px;
-  box-shadow: 0 16px 48px #0005;
-}
-.translationsDesktop {
-  position: absolute;
-  top: 68px;
-  right: 26px;
-  width: 370px;
-  margin: 0;
-  z-index: 2;
-}
-
 .languageHeadline { min-height: 2.2em; }
 .languageHeadline span {
   display: inline-block;
@@ -1932,3 +1889,10 @@
 @media (prefers-reduced-motion: reduce) {
   .languageHeadline span { animation: none; }
 }
+
+/* Hebrew, as in the app: mirrored layout, with ports, sizes and charts kept left-to-right. */
+.view[dir='rtl'] .portLabel { justify-content: flex-end; }
+.view[dir='rtl'] .rowPort { width: auto; }
+.view[dir='rtl'] :is(.rowMemory, .mono, .memoryLegend b) { unicode-bidi: plaintext; }
+.view[dir='rtl'] .rowMemory { text-align: left; }
+.view[dir='rtl'] .chart { direction: ltr; }

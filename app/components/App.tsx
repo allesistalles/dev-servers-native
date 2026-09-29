@@ -3,7 +3,8 @@
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import styles from './landing.module.css'
 import { AMBER, BackIcon, Chevron, ClaudeIcon, CodexIcon, Colon, DotGrid, OpenIcon, VercelIcon } from './icons'
-import { GET_IT, TERMINAL, TRANSLATIONS } from './sections'
+import { type AppLanguageCode, type Localizer, localizer } from './languages'
+import { GET_IT, TERMINAL } from './sections'
 import {
   type Agent,
   type Server,
@@ -34,7 +35,9 @@ const SECTION_VIEWS: View[] = [
 ]
 
 // The Terminal section shows `wtp` instead, and the last section the dot matrix.
-const opensPopover = (section: number) => section !== GET_IT && section !== TERMINAL && section !== TRANSLATIONS
+const opensPopover = (section: number) => section !== GET_IT && section !== TERMINAL
+
+const ramShare = (mb: number) => `${((mb / SYSTEM_MEMORY) * 100).toFixed(1)}%`
 
 const suggested = (running: string[]) =>
   SERVERS.filter((s) => s.cleanUp?.suggested && running.includes(s.port)).map((s) => s.port)
@@ -130,8 +133,10 @@ function Frame({ children, viewKey }: { children: ReactNode; viewKey: string }) 
   )
 }
 
-export function AppPopover({ demo }: { demo: Demo }) {
+// `language` shows the app's own translations, laid out right-to-left for Hebrew.
+export function AppPopover({ demo, language = 'en' }: { demo: Demo; language?: AppLanguageCode }) {
   const { view, direction } = demo
+  const l = localizer(language)
   const key =
     view.name === 'detail'
       ? `detail-${view.port}`
@@ -142,24 +147,30 @@ export function AppPopover({ demo }: { demo: Demo }) {
         : 'empty'
 
   let content: ReactNode
-  if (view.name === 'detail') content = <DetailView demo={demo} server={SERVERS.find((s) => s.port === view.port)!} />
-  else content = <ListView demo={demo} />
+  if (view.name === 'detail') content = <DetailView demo={demo} server={SERVERS.find((s) => s.port === view.port)!} l={l} />
+  else content = <ListView demo={demo} l={l} />
 
   return (
     <Frame viewKey={key}>
-      <div key={key} className={styles.view} style={{ ['--dir' as string]: direction }}>
+      <div
+        key={key}
+        className={styles.view}
+        style={{ ['--dir' as string]: direction }}
+        lang={language}
+        dir={l.rtl ? 'rtl' : 'ltr'}
+      >
         {content}
       </div>
     </Frame>
   )
 }
 
-function Header({ title, onBack }: { title: string; onBack?: () => void }) {
+function Header({ title, onBack, backLabel }: { title: string; onBack?: () => void; backLabel?: string }) {
   return (
     <div className={styles.popTitleRow}>
       <span className={styles.popTitle}>{title}</span>
       {onBack && (
-        <button type="button" className={styles.popBack} onClick={onBack} aria-label="Back">
+        <button type="button" className={styles.popBack} onClick={onBack} aria-label={backLabel}>
           <BackIcon />
         </button>
       )}
@@ -186,7 +197,7 @@ function useFlash() {
   return [flash, trigger] as const
 }
 
-function ListView({ demo }: { demo: Demo }) {
+function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
   const [flash, trigger] = useFlash()
   const cleaning = demo.view.name === 'cleanUp'
   const [focus, setFocus] = useState<string | null>(null)
@@ -219,7 +230,7 @@ function ListView({ demo }: { demo: Demo }) {
           title={
             focusedServer
               ? `${focusedServer.name} :${focusedServer.port}`
-              : (focusedApp?.name ?? (cleaning ? 'Clean up' : 'Servers'))
+              : (focusedApp?.id === 'rest' ? l.text('Everything else') : (focusedApp?.name ?? l.text(cleaning ? 'Clean up' : 'Servers')))
           }
         />
         <div className={styles.popDisplay}>
@@ -229,25 +240,25 @@ function ListView({ demo }: { demo: Demo }) {
             {focusedMemory !== undefined ? (
               <span className={focusedApp?.id === 'rest' ? styles.t2 : styles.mono}>
                 {focusedApp?.id === 'rest'
-                  ? 'System and smaller apps'
-                  : `${((focusedMemory / SYSTEM_MEMORY) * 100).toFixed(1)}% of RAM${focusedServer ? ` · CPU ${focusedServer.cpu}%` : ''}`}
+                  ? l.text('System and smaller apps')
+                  : focusedServer
+                    ? l.format('%@ of RAM · CPU %@', ramShare(focusedMemory), `${focusedServer.cpu}%`)
+                    : l.format('%@ of RAM', ramShare(focusedMemory))}
               </span>
             ) : cleaning ? (
               <span className={styles.t2}>
-                {chosen.length ? `freed by stopping ${chosen.length}` : 'Pick servers to stop'}
+                {chosen.length ? l.format('freed by stopping %d', chosen.length) : l.text('Pick servers to stop')}
               </span>
             ) : (
               <button
                 type="button"
                 className={styles.cpuToggle}
                 onClick={() => setCpuAll((v) => !v)}
-                title={
-                  cpuAll
-                    ? 'Whole Mac. Click for servers only.'
-                    : 'Dev servers, as a share of the whole Mac. Click for all.'
-                }
+                title={l.text(
+                  cpuAll ? 'Whole Mac. Click for servers only.' : 'Dev servers, as a share of the whole Mac. Click for all.',
+                )}
               >
-                <span className={styles.t3}>CPU ({cpuAll ? 'all' : 'servers'})</span>
+                <span className={styles.t3}>{l.text(cpuAll ? 'CPU (all)' : 'CPU (servers)')}</span>
                 <span className={`${styles.mono} ${styles.t2}`}>{cpuAll ? cpu + 18 : cpu}%</span>
               </button>
             )}
@@ -282,7 +293,7 @@ function ListView({ demo }: { demo: Demo }) {
               style={{ flexGrow: app.memory }}
               tabIndex={0}
               role="img"
-              aria-label={`${app.name} · ${formatMemory(app.memory)}`}
+              aria-label={app.id === 'rest' ? l.format('Everything else · %@', formatMemory(app.memory)) : `${app.name} · ${formatMemory(app.memory)}`}
               data-focused={focus === app.id}
               onMouseEnter={() => setFocus(app.id)}
               onMouseLeave={() => setFocus(null)}
@@ -293,21 +304,21 @@ function ListView({ demo }: { demo: Demo }) {
           <span
             className={styles.freeMemory}
             style={{ flexGrow: SYSTEM_MEMORY - total - OTHER_MEMORY }}
-            title={`Free · ${formatMemory(SYSTEM_MEMORY - total - OTHER_MEMORY)}`}
+            title={l.format('Free · %@', formatMemory(SYSTEM_MEMORY - total - OTHER_MEMORY))}
           />
         </div>
         <div className={styles.memoryLegend}>
           <span>
             <i data-servers />
-            Servers <b>{formatTotal(total)}</b>
+            {l.text('Servers')} <b>{formatTotal(total)}</b>
           </span>
           <span>
             <i />
-            Other apps <b>{formatTotal(OTHER_MEMORY)}</b>
+            {l.text('Other apps')} <b>{formatTotal(OTHER_MEMORY)}</b>
           </span>
           <span>
             <i data-free />
-            Free <b>{formatTotal(SYSTEM_MEMORY - total - OTHER_MEMORY).split(' ')[0]} of 16 GB</b>
+            {l.text('Free')} <b>{l.format('%@ of %@', formatTotal(SYSTEM_MEMORY - total - OTHER_MEMORY).split(' ')[0], '16 GB')}</b>
           </span>
         </div>
       </div>
@@ -316,8 +327,10 @@ function ListView({ demo }: { demo: Demo }) {
         {!demo.running.length && (
           <div className={styles.emptyState}>
             <DotGrid size={48} />
-            <span className={styles.t2}>Nothing listening</span>
-            <span className={`${styles.caption} ${styles.t3}`}>Dev servers on ports 3000–65535 show up here.</span>
+            <span className={styles.t2}>{l.text('Nothing listening')}</span>
+            <span className={`${styles.caption} ${styles.t3}`}>
+              {l.format('Dev servers on ports %d–%d show up here.', 3000, 65535)}
+            </span>
           </div>
         )}
         {demo.running.map((s) => (
@@ -356,9 +369,11 @@ function ListView({ demo }: { demo: Demo }) {
                 </svg>
               </span>
             )}
-            <Colon state={s.status} color={portColor(s.port)} />
-            <span className={styles.rowPort} style={{ color: portColor(s.port) }}>
-              {s.port}
+            <span className={styles.portLabel}>
+              <Colon state={s.status} color={portColor(s.port)} />
+              <span className={styles.rowPort} style={{ color: portColor(s.port) }}>
+                {s.port}
+              </span>
             </span>
             <span className={styles.rowMain}>
               <span className={styles.rowName} title={s.branch}>
@@ -370,8 +385,8 @@ function ListView({ demo }: { demo: Demo }) {
                   {flash === s.port
                     ? `Opened localhost:${s.port}`
                     : cleaning && s.cleanUp
-                      ? s.cleanUp.note
-                      : s.context.text}
+                      ? s.lines(l).note
+                      : s.lines(l).context}
                 </span>
               </span>
             </span>
@@ -391,7 +406,7 @@ function ListView({ demo }: { demo: Demo }) {
                 <button
                   type="button"
                   className={styles.rowAction}
-                  aria-label={`Open localhost:${s.port}`}
+                  aria-label={l.text('Open in browser')}
                   onClick={(e) => {
                     e.stopPropagation()
                     trigger(s.port)
@@ -402,7 +417,7 @@ function ListView({ demo }: { demo: Demo }) {
                 <button
                   type="button"
                   className={styles.rowAction}
-                  aria-label={`Stop ${s.name}`}
+                  aria-label={l.text('Stop')}
                   onClick={(e) => {
                     e.stopPropagation()
                     demo.stop([s.port])
@@ -430,7 +445,7 @@ function ListView({ demo }: { demo: Demo }) {
       ) : cleaning ? (
         <div className={`${styles.popSection} ${styles.actions}`}>
           <button type="button" className={styles.secondaryAction} onClick={() => demo.go({ name: 'list' }, -1)}>
-            Cancel
+            {l.text('Cancel')}
           </button>
           <button
             type="button"
@@ -442,8 +457,8 @@ function ListView({ demo }: { demo: Demo }) {
             }}
           >
             {chosen.length
-              ? `Stop ${chosen.length} ${chosen.length === 1 ? 'server' : 'servers'} · free ${formatMemory(freed)}`
-              : 'Stop servers'}
+              ? l.format('Stop %d %@ · free %@', chosen.length, l.counted('server', 'servers', chosen.length), formatMemory(freed))
+              : l.text('Stop servers')}
           </button>
         </div>
       ) : (
@@ -460,7 +475,7 @@ function ListView({ demo }: { demo: Demo }) {
               />
               <path d="M5 10.5v2M7.5 10.5v2" fill="none" stroke="#F5F5F7" strokeWidth="1.1" strokeLinecap="round" />
             </svg>
-            <span className={styles.popTitle}>Clean up</span>
+            <span className={styles.popTitle}>{l.text('Clean up')}</span>
             {cleanUpCount > 0 && <span className={styles.chipCount}>{cleanUpCount}</span>}
           </button>
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
@@ -480,7 +495,7 @@ function ListView({ demo }: { demo: Demo }) {
   )
 }
 
-function DetailView({ demo, server }: { demo: Demo; server: Server }) {
+function DetailView({ demo, server, l }: { demo: Demo; server: Server; l: Localizer }) {
   const [moreInfo, setMoreInfo] = useState(false)
   const [processesOpen, setProcessesOpen] = useState(false)
   const [restarting, setRestarting] = useState(false)
@@ -534,9 +549,9 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
   return (
     <>
       <div className={styles.popHead}>
-        <Header title={server.name} onBack={() => demo.go({ name: 'list' }, -1)} />
+        <Header title={server.name} onBack={() => demo.go({ name: 'list' }, -1)} backLabel={l.text('Back')} />
         <div className={styles.popDisplay} style={{ justifyContent: 'space-between' }}>
-          <span className={styles.popDisplay}>
+          <span className={styles.popDisplay} dir="ltr">
             <Colon state={server.status} color={portColor(server.port)} dot={6} gap={6} />
             <span className={styles.popBig} style={{ color: portColor(server.port) }}>
               {server.port}
@@ -547,8 +562,8 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
               {restarting
                 ? 'restarting…'
                 : restarted
-                  ? 'Running for <1m'
-                  : `Running for ${server.uptime.replace(/^(up|idle) /, '')}`}
+                  ? l.format('Running for %@', l.duration(0))
+                  : l.format('Running for %@', server.lines(l).running)}
             </span>
             <span className={styles.popDisplay}>
               <button
@@ -557,7 +572,7 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
                 aria-label="Restart"
                 disabled={server.status === 'idle' || restarting}
                 title={
-                  server.status === 'idle' ? 'Working directory no longer exists' : 'Restart with the same command'
+                  server.status === 'idle' ? 'Working directory no longer exists' : l.text('Restart with the same command')
                 }
                 data-spinning={restarting}
                 onClick={() => setRestarting(true)}
@@ -583,7 +598,7 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
               <button
                 type="button"
                 className={`${styles.control} ${styles.controlStop}`}
-                aria-label="Stop"
+                aria-label={l.text('Stop')}
                 onClick={() => demo.stop([server.port])}
               >
                 <svg width="11" height="11" viewBox="0 0 12 12" aria-hidden>
@@ -598,7 +613,7 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
       <div className={`${styles.popSection} ${styles.infoList}`}>
         {shownInfo.map(([label, value]) => (
           <div key={label} className={styles.infoRow}>
-            <span className={styles.infoLabel}>{label}</span>
+            <span className={styles.infoLabel}>{l.text(label)}</span>
             {typeof value === 'string' ? <span className={`${styles.ellipsis} ${styles.t1}`}>{value}</span> : value}
           </div>
         ))}
@@ -606,7 +621,7 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
           <div>
             {hiddenInfo.map(([label, value]) => (
               <div key={label} className={styles.infoRow}>
-                <span className={styles.infoLabel}>{label}</span>
+                <span className={styles.infoLabel}>{l.text(label)}</span>
                 <span
                   className={`${styles.ellipsis} ${label === 'PID' || label === 'Command' ? styles.mono : ''} ${styles.t1}`}
                 >
@@ -619,7 +634,7 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
         <div className={styles.infoRow}>
           <span className={styles.infoLabel} />
           <button type="button" className={styles.infoMore} onClick={() => setMoreInfo((v) => !v)} data-open={moreInfo}>
-            {moreInfo ? 'Less' : `${hiddenInfo.length} more`} <Chevron direction="down" />
+            {moreInfo ? l.text('Less') : l.format('%d more', hiddenInfo.length)} <Chevron direction="down" />
           </button>
         </div>
       </div>
@@ -627,12 +642,12 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
       <div className={`${styles.popSection} ${styles.chart}`}>
         <div className={styles.chartHead}>
           <span className={styles.chartTitle}>
-            <span className={styles.t2}>Memory</span>
+            <span className={styles.t2}>{l.text('Memory')}</span>
             <span className={styles.mono} style={{ fontWeight: 500 }}>
               {formatMemory(sample?.memory ?? server.memory)}
             </span>
           </span>
-          <span className={`${styles.mono} ${styles.caption} ${styles.t3}`}>{timestamp ?? '10 min'}</span>
+          <span className={`${styles.mono} ${styles.caption} ${styles.t3}`}>{timestamp ?? l.text('10 min')}</span>
         </div>
         <div className={styles.plot}>
           <span className={styles.axis} style={{ height: 56, position: 'relative' }}>
@@ -720,7 +735,7 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
           data-open={processesOpen}
         >
           <span className={styles.popDisplay} style={{ gap: 4 }}>
-            <span className={styles.t2}>Processes</span>
+            <span className={styles.t2}>{l.text('Processes')}</span>
             <span className={styles.processesChevron}>
               <Chevron direction="right" />
             </span>
@@ -752,11 +767,11 @@ function DetailView({ demo, server }: { demo: Demo; server: Server }) {
 
       <div className={`${styles.popSection} ${styles.actions}`}>
         <button type="button" className={styles.primaryAction} onClick={() => trigger('open')}>
-          {flash === 'open' ? 'Opened in your browser' : `Open localhost:${server.port}`}
+          {flash === 'open' ? 'Opened in your browser' : l.format('Open localhost:%@', server.port)}
         </button>
         <button type="button" className={styles.secondaryAction} onClick={() => trigger('preview')}>
           <VercelIcon fill="rgb(235 235 245 / 75%)" width={11} height={10} />
-          {flash === 'preview' ? 'Opened' : 'Preview'}
+          {flash === 'preview' ? 'Opened' : l.text('Preview')}
         </button>
         <button type="button" className={styles.moreAction} aria-label="More">
           <span />

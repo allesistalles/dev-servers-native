@@ -7,8 +7,8 @@ import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { BatteryIcon, DotGrid, GitHubIcon, WifiIcon } from './icons'
 import { GET_IT, GITHUB_URL, SECTIONS, TERMINAL, TRANSLATIONS } from './sections'
+import { useHeadlineLanguage } from './LanguageHeadline'
 import { TerminalWindow } from './Terminal'
-import { Translations } from './Translations'
 
 type Props = {
   active: number
@@ -55,6 +55,7 @@ function Clock() {
 export function Screen({ active, stars, onNavigate }: Props) {
   const demo = useDemo(active)
   const alert = demo.running.some((s) => s.status === 'amber')
+  const language = useHeadlineLanguage()
 
   return (
     <div className={styles.screen}>
@@ -85,10 +86,9 @@ export function Screen({ active, stars, onNavigate }: Props) {
       </div>
 
       <TerminalWindow visible={active === TERMINAL} desktop />
-      <Translations visible={active === TRANSLATIONS} desktop />
 
       <div className={styles.popoverShell} data-open={demo.open}>
-        <AppPopover demo={demo} />
+        <AppPopover demo={demo} language={active === TRANSLATIONS ? language : 'en'} />
       </div>
 
       <nav className={styles.menuBar}>

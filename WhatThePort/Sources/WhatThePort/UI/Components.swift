@@ -69,6 +69,8 @@ struct Sparkline: View {
                 .stroke(Theme.text2, style: StrokeStyle(lineWidth: 1.25, lineCap: .round, dash: [2, 3]))
             }
         }
+        // Time runs left to right in every language, as in the detail charts.
+        .environment(\.layoutDirection, .leftToRight)
     }
 }
 
