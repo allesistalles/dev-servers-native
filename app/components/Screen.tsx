@@ -6,7 +6,7 @@ import { AppPopover, useDemo } from './App'
 import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { BatteryIcon, DotGrid, GitHubIcon, WifiIcon } from './icons'
-import { GET_IT, GITHUB_URL, SECTIONS, TRANSLATIONS } from './sections'
+import { BOARD, GET_IT, GITHUB_URL, SECTIONS, TRANSLATIONS } from './sections'
 import { useHeadlineLanguage } from './LanguageHeadline'
 
 type Props = {
@@ -85,7 +85,7 @@ export function Screen({ active, stars, onNavigate }: Props) {
       </div>
 
       <div className={styles.popoverShell} data-open={demo.open}>
-        <AppPopover demo={demo} language={active === TRANSLATIONS ? language : 'en'} />
+        <AppPopover demo={demo} language={active === TRANSLATIONS ? language : 'en'} focusBoard={active === BOARD} />
       </div>
 
       <nav className={styles.menuBar}>

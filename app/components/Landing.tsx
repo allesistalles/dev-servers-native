@@ -8,7 +8,7 @@ import { SectionCopy } from './Copy'
 import { DotMatrix } from './DotMatrix'
 import { DotGrid } from './icons'
 import { Screen } from './Screen'
-import { DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS, TRANSLATIONS } from './sections'
+import { BOARD, DOWNLOAD_URL, GET_IT, GITHUB_URL, SECTIONS, TRANSLATIONS } from './sections'
 import { useHeadlineLanguage } from './LanguageHeadline'
 
 // Scene geometry, in the 2560×1600 space the room photos and laptop were composed in (Paper boards 22–26).
@@ -178,7 +178,7 @@ function StandalonePopover({ section, zoom }: { section: number; zoom: number })
   const language = useHeadlineLanguage()
   return (
     <div style={{ zoom }}>
-      <AppPopover demo={demo} language={section === TRANSLATIONS ? language : 'en'} />
+      <AppPopover demo={demo} language={section === TRANSLATIONS ? language : 'en'} focusBoard={section === BOARD} />
     </div>
   )
 }

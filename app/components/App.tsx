@@ -135,7 +135,15 @@ function Frame({ children, viewKey }: { children: ReactNode; viewKey: string }) 
 }
 
 // `language` shows the app's own translations, laid out right-to-left for Hebrew.
-export function AppPopover({ demo, language = 'en' }: { demo: Demo; language?: AppLanguageCode }) {
+export function AppPopover({
+  demo,
+  language = 'en',
+  focusBoard = false,
+}: {
+  demo: Demo
+  language?: AppLanguageCode
+  focusBoard?: boolean
+}) {
   const { view, direction } = demo
   const l = localizer(language)
   const key =
@@ -149,7 +157,7 @@ export function AppPopover({ demo, language = 'en' }: { demo: Demo; language?: A
 
   let content: ReactNode
   if (view.name === 'detail') content = <DetailView demo={demo} server={SERVERS.find((s) => s.port === view.port)!} l={l} />
-  else content = <ListView demo={demo} l={l} />
+  else content = <ListView demo={demo} l={l} focusBoard={focusBoard} />
 
   return (
     <Frame viewKey={key}>
@@ -198,8 +206,17 @@ function useFlash() {
   return [flash, trigger] as const
 }
 
-function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
+function ListView({ demo, l, focusBoard = false }: { demo: Demo; l: Localizer; focusBoard?: boolean }) {
   const [flash, trigger] = useFlash()
+  const boardRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const node = boardRef.current
+    if (!focusBoard || !node) return
+    const scroller = node.closest(`.${styles.popover}`)
+    if (!(scroller instanceof HTMLElement)) return
+    const top = node.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
+    scroller.scrollTop = top
+  }, [focusBoard])
   const cleaning = demo.view.name === 'cleanUp'
   const [focus, setFocus] = useState<string | null>(null)
   const [hoveredRow, setHoveredRow] = useState<string | null>(null)
@@ -436,7 +453,7 @@ function ListView({ demo, l }: { demo: Demo; l: Localizer }) {
           </div>
         ))}
         {!cleaning && (
-          <div className={styles.boardTabs} role="tablist">
+          <div className={styles.boardTabs} role="tablist" ref={boardRef}>
             {['Overview', 'All', 'Local', 'LAN', 'Stopped', 'System'].map((tab) => (
               <span key={tab} className={tab === 'Overview' ? styles.boardTabOn : styles.boardTab} role="tab">
                 {l.text(tab)}
