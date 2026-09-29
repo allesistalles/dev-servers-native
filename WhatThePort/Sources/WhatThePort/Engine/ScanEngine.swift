@@ -5,10 +5,6 @@ struct ScanConfig {
     var maxPort: Int
     var allowlist: Set<String>
     var protected: Set<String> = Set(Preferences.defaultProtected)
-    var linkClaude = true
-    var linkCodex = true
-    var linkConductor = true
-    var showBranches = true
 }
 
 /// Builds the list of servers from sockets and the process table. Holds the
@@ -30,7 +26,6 @@ final class ScanEngine: @unchecked Sendable {
     private static let agentPathMarkers = ["@anthropic-ai/claude-code", "com.conductor.app", "/codex/"]
 
     private let projects = ProjectResolver()
-    private let agents = AgentSessionResolver()
     private var previousCPU: [pid_t: (nanoseconds: UInt64, at: Date)] = [:]
     private var histories: [String: [Sample]] = [:]
     private var lastActive: [String: Date] = [:]
@@ -87,10 +82,8 @@ final class ScanEngine: @unchecked Sendable {
             if cwd == "/" || [rootArgs?.executablePath, args(for: listener)?.executablePath].contains(where: { $0?.contains(".app/Contents/") == true }) {
                 continue
             }
-            let environment = inheritedEnvironment(from: listener, root: root, in: processes)
             let command = rootArgs.map { Self.prettyCommand($0.arguments, comm: root.comm) }
-            var project = projects.resolve(cwd: cwd, command: command)
-            if !config.showBranches { project.branch = nil }
+            let project = projects.resolve(cwd: cwd, command: command)
 
             // Restart from the highest process whose argv wasn't overwritten by a
             // title; e.g. the `sh -c "next dev -p 3000"` that npm spawns.
@@ -121,8 +114,6 @@ final class ScanEngine: @unchecked Sendable {
                 launchDirectory: ProcessInspector.currentDirectory(launcher.pid) ?? cwd,
                 startedAt: root.startTime,
                 project: project,
-                conductorWorkspace: config.linkConductor ? environment["CONDUCTOR_WORKSPACE_NAME"] : nil,
-                agent: agents.resolve(environment: environment, cwd: cwd, claude: config.linkClaude, codex: config.linkCodex),
                 processes: nodes,
                 processStarts: starts,
                 memory: memory,
@@ -185,29 +176,6 @@ final class ScanEngine: @unchecked Sendable {
         }
         visit(rootProcess, depth: 0)
         return result
-    }
-
-    /// Merges environments from the listener up through its launcher. Tools that
-    /// rename their process (Next.js sets `process.title = "next-server"`)
-    /// overwrite the memory their environment is read from, so the session
-    /// variables often only survive on a parent like `npm`.
-    private func inheritedEnvironment(from listener: ProcSnapshot, root: ProcSnapshot, in processes: [pid_t: ProcSnapshot]) -> [String: String] {
-        var chain: [ProcSnapshot] = [listener]
-        var current = listener
-        var extraHops = 2
-        while current.ppid > 1, let parent = processes[current.ppid], chain.count < 10 {
-            if current.pid == root.pid || chain.contains(where: { $0.pid == root.pid }) {
-                guard extraHops > 0 else { break }
-                extraHops -= 1
-            }
-            chain.append(parent)
-            current = parent
-        }
-        var environment: [String: String] = [:]
-        for process in chain.reversed() {
-            environment.merge(args(for: process)?.environment ?? [:]) { _, closer in closer }
-        }
-        return environment
     }
 
     private static func hasIntactArguments(_ args: ProcArgs?) -> Bool {

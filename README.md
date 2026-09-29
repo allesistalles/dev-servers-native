@@ -1,6 +1,6 @@
 # Dev Servers
 
-Native macOS menu-bar app for local dev servers, LaunchAgents and LAN devices. This is a fork of [WhatThePort](https://github.com/tomjohndesign/what-the-port) by [Tomjohn](https://tomjohn.design), MIT. It keeps WhatThePort’s scanner, leak alerts, Clean up and agent sessions, and adds the helpers, noise rules, LAN discovery and card controls needed to replace the Electron [Dev Servers](https://github.com/allesistalles/dev-servers) app.
+Native macOS menu-bar app for local dev servers, LaunchAgents and LAN devices. This is a fork of [WhatThePort](https://github.com/tomjohndesign/what-the-port) by Tom Johnson, MIT. The popover is the Dev Servers board: helpers, listeners, and LAN devices, with Open, Start, Restart and Kill.
 
 The app’s display name is **Dev Servers**. Bundle id: `website.vibed.devservers`. The website download stays [`/WhatThePort.dmg`](https://whattheport.dev/WhatThePort.dmg).
 
@@ -50,27 +50,18 @@ The prebuilt download is for **Apple Silicon Macs running macOS 14 or later**. T
 
 ## Features
 
-- **Every dev server at a glance** - Port, project, git branch, uptime and memory for each server, with stable port colors and a whole-Mac memory bar for servers, other apps, and free RAM
-- **Knows what started it** - Links servers to the Claude Code, Codex or Conductor session that launched them
-- **Resource charts** - 10 minutes of memory and CPU history per server, summed across its whole process tree
-- **Leak detection** - Servers over 2 GB, or growing fast, turn amber in the list and the menu bar
-- **Clean up** - Find servers from deleted worktrees or that have gone idle, and stop them in bulk
-- **Stop and restart** - Stops the whole process tree; restart reruns the original command in the same folder
-- **Alerts** - Notifications with Details, Stop and Snooze when a server passes your memory threshold or starts leaking
-- **Automatic clean up (optional)** - Off, Ask or Automatic; leaking servers are never stopped automatically
-- **Previews and pull requests (optional)** - A Vercel preview button and the branch's pull request, via the GitHub CLI you're already signed in to
-- **Board** - Overview, All, Local, LAN, Stopped and System. Open, Start, Restart and Kill stay on the card
-- **LAN** - mDNS hosts on `_http`, `_arduino` and `_esphomelib`, probed on the advertised port and port 80. Any HTTP response, including 404, is a portal with Open. No HTTP response is one OTA card per host. Seed hosts are still probed if browse returns nothing
+- **Board** - Overview, All, Local, LAN, Stopped and System. The popover is that board: Mac helpers, dev servers and listeners, and LAN devices
+- **Open, Start, Restart and Kill** - On each card you can control. Any HTTP response, including 404, is a portal with Open. No HTTP response is one OTA card per host
+- **LAN** - mDNS hosts on `_http`, `_arduino` and `_esphomelib`, probed on the advertised port and port 80. Seed hosts are still probed if browse returns nothing
 - **Global shortcut** - ⌥⌘P opens the popover
 - **Light and dark mode** - Follows your Mac’s appearance, with matching port numbers and colon colors
 
 ## Usage
 
-WhatThePort lives in the menu bar as a small dot grid. Click it to see every server:
+Dev Servers lives in the menu bar as a small dot grid. Click it to see the board:
 
 - Open, Start, Restart and Kill sit on each card you can control
-- Click a local dev server for details: session, branch, folder, command, charts and processes
-- Click **Clean up** to tick the servers you want gone and stop them together
+- LAN cards with a web portal have Open. Firmware-only cards do not
 
 Right-click the dot grid to open a server in the browser, open Settings, send feedback or quit.
 
@@ -89,20 +80,16 @@ The native app supports **English, German, French, Spanish, Simplified Chinese, 
 
 Open Settings from the gear in the popover (⌘,):
 
-- **General** - Language, launch at login, menu bar icon style, editor, global shortcut, scan interval
-- **Alerts** - Memory threshold, leak warnings, snooze length, start/stop notifications
-- **Clean up** - Off / Ask / Automatic, what counts as idle or stale, protected processes, force-quit delay
-- **Ports & processes** - Port range and which processes count as dev servers
-- **Integrations** - Claude Code, Codex and Conductor session links, branch names, Vercel previews and pull requests
-- **About** - Version, bug reports or feature requests as GitHub issues with your app and macOS versions filled in, a tip jar, and credit to the upstream WhatThePort project
+- **General** - Language, launch at login, menu bar icon style, global shortcut, scan interval
+- **About** - Version, bug reports or feature requests as GitHub issues, a tip jar, and credit as a fork of WhatThePort by Tom Johnson
 
 ## How It Works
 
-WhatThePort reads listening TCP sockets with `lsof`, then inspects each server's process tree directly through `libproc` and `sysctl`: memory footprint, CPU time, working directory, arguments and environment. From the working directory it finds the project manifest, framework and git branch. Session links come from environment variables that Claude Code and Conductor pass to the commands they run, and from Codex's session files. It rescans every 2 seconds.
+Dev Servers reads listening TCP sockets with `lsof`, then names local listeners from the project folder. It also browses mDNS and probes each host on its advertised port and port 80. It rescans every 2 seconds.
 
 ## Privacy
 
-There's no account, no analytics SDK, and no usage sharing. Everything the app shows comes from your Mac and stays there. It only goes online, if you turn them on, to look up Vercel previews and pull requests through the GitHub CLI. The app does not check for updates.
+There's no account, no analytics SDK, and no usage sharing. Everything the app shows comes from your Mac and stays there. The app does not check for updates.
 
 The website uses cookieless [Vercel Web Analytics](https://vercel.com/docs/analytics) to count visits and download clicks.
 
@@ -166,7 +153,7 @@ The Electron repo was not readable from the build environment. The rules below f
 
 Signing and notarization for a local release are in [Release setup](WhatThePort/UPDATES.md). The release script packages a notarized disk image. It does not publish an update feed.
 
-To package a local build as the download's disk image, run `./make-dmg.sh` after `./build-app.sh`. The disk image file stays `WhatThePort.dmg`. The app inside it is `Dev Servers.app`.
+To package a local build as the download's disk image, run `./make-dmg.sh` after `./build-app.sh`. The disk image file stays `WhatThePort.dmg` so the site link does not change. The volume name and the app inside it are Dev Servers.
 
 ## Automatic deployment
 

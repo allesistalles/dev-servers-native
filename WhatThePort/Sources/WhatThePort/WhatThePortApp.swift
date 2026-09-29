@@ -21,7 +21,6 @@ struct DevServersApp: App {
             let directory = CommandLine.arguments.dropFirst(index + 1).first ?? FileManager.default.currentDirectoryPath
             SnapshotRenderer.run(monitor: monitor, directory: directory)
         }
-        AlertCenter.shared.start(monitor: monitor)
         HotKey.shared.setEnabled(UserDefaults.standard.bool(forKey: Preferences.hotkey))
         monitor.start()
     }
@@ -65,11 +64,10 @@ struct MenuBarLabel: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        let count = monitor.servers.count
+        let count = monitor.board.filter { $0.kind != "system" }.count
         let style = Preferences.IconStyle(rawValue: iconStyle) ?? .colonCount
         let (glyph, label): (DotGlyph, Int?) = {
             if count == 0 { return (.colon, nil) }
-            if monitor.needsAttention { return (.alert, style == .colon ? nil : count) }
             switch style {
             case .colon: return (.colon, nil)
             case .colonCount: return (.colon, count)
@@ -85,7 +83,6 @@ struct MenuBarLabel: View {
                 }
                 AppDelegate.openSettings = openSettings
                 StatusItemMenu.install(monitor: monitor, openSettings: openSettings)
-                AlertCenter.shared.openSettings = openSettings
             }
     }
 }

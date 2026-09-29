@@ -78,10 +78,6 @@ Two more things help:
 
 ## With WhatThePort
 
-[WhatThePort](/) is a free menu bar app built for this. It links every server to the Claude Code, Codex or Conductor session that started it, using the same environment variables and session files described above. Click a server to see its session, branch, folder and command, then resume the conversation or stop the server and its whole process tree.
-
-**Clean up** preselects servers from deleted worktrees and servers that have been idle for hours, so the leftovers from last week’s agent sessions go in one click. You can set it to ask first or to run automatically; servers that are leaking memory are never stopped automatically, and Postgres and Redis are protected by default.
-
-The popover and the detail view show each server’s port, folder, branch and the session that started it, so you can reuse a running server instead of starting a duplicate.
+[Dev Servers](/) is the menu bar app in this fork. The popover is one board of helpers, local listeners and LAN devices. Open, Start, Restart and Kill stay on the card. It does not link a server to a coding-agent session or resume a terminal.
 
 [Download WhatThePort](/WhatThePort.dmg) for Apple Silicon Macs on macOS 14 or later.

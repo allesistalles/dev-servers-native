@@ -1,4 +1,5 @@
 import AppKit
+import DevServersCore
 
 /// Right-click (or Control-click) menu for the menu bar icon. MenuBarExtra has
 /// no API for one, so watch for secondary clicks on its status bar button.
@@ -24,13 +25,13 @@ enum StatusItemMenu {
 
         let browser = NSMenuItem(title: L10n.text("Open in Browser"), action: nil, keyEquivalent: "")
         let servers = NSMenu()
-        for server in monitor.servers {
-            servers.addItem(ActionItem("localhost:\(String(server.port))  \(server.project.branch ?? server.project.name)") {
-                NSWorkspace.shared.open(server.url)
+        for item in monitor.board where CardActions.canOpen(item) {
+            servers.addItem(ActionItem("\(item.title)  \(item.url)") {
+                monitor.open(item)
             })
         }
         browser.submenu = servers
-        browser.isEnabled = !monitor.servers.isEmpty
+        browser.isEnabled = servers.numberOfItems > 0
         menu.addItem(browser)
 
         menu.addItem(.separator())

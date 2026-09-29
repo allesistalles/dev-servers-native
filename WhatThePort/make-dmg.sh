@@ -21,7 +21,7 @@ if [[ ! -x "${VENV}/bin/dmgbuild" ]]; then
 fi
 
 rm -f "${DMG}"
-"${VENV}/bin/dmgbuild" -s dmg/settings.py -D app="${APP}" WhatThePort "${DMG}"
+"${VENV}/bin/dmgbuild" -s dmg/settings.py -D app="${APP}" "Dev Servers" "${DMG}"
 
 IDENTITY="${CODE_SIGN_IDENTITY:--}"
 if [[ "${IDENTITY}" != "-" ]]; then

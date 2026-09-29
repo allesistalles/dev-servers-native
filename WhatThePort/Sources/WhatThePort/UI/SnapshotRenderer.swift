@@ -18,14 +18,9 @@ enum SnapshotRenderer {
         let output = URL(fileURLWithPath: directory, isDirectory: true)
         try? FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
 
-        var pages: [(String, PopoverRoute, Bool)] = [("servers", .servers, false), ("cleanup", .servers, true)]
-        if let first = monitor.servers.first(where: { $0.agent != nil }) ?? monitor.servers.first {
-            pages.insert(("detail", .detail(port: first.port), false), at: 1)
-        }
-        for (name, route, cleaning) in pages {
-            // Render the same page at the popover's width without its menu-bar
-            // window fitter, which would resize away the snapshot padding.
-            let view = snapshotPage(monitor: monitor, route: route, cleaning: cleaning)
+        let pages = ["board"]
+        for name in pages {
+            let view = ServersView(monitor: monitor, openSettings: {})
                 .frame(width: Theme.popoverWidth)
                 .background(Theme.popoverBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -49,27 +44,15 @@ enum SnapshotRenderer {
             try? png.write(to: output.appendingPathComponent("appicon-1024.png"))
         }
 
-        let icon = MenuBarIcon.image(glyph: monitor.needsAttention ? .alert : .colon, count: monitor.servers.count)
+        let icon = MenuBarIcon.image(glyph: .colon, count: monitor.board.filter { $0.kind != "system" }.count)
         if let tiff = icon.tiffRepresentation, let png = NSBitmapImageRep(data: tiff)?.representation(using: .png, properties: [:]) {
             try? png.write(to: output.appendingPathComponent("menubar-icon.png"))
         }
 
         for server in monitor.servers {
-            print(":\(server.port)  \(server.project.name)  branch=\(server.project.branch ?? "-")  root=\(server.command ?? "-")  procs=\(server.processes.count)  mem=\(Format.bytesString(server.memory))  cpu=\(Format.percent(server.cpu))  agent=\(server.agent.map { "\($0.kind.rawValue): \($0.title ?? "?")" } ?? "-")  ws=\(server.conductorWorkspace ?? "-")")
+            print(":\(server.port)  \(server.project.name)  branch=\(server.project.branch ?? "-")  root=\(server.command ?? "-")  procs=\(server.processes.count)  mem=\(Format.bytesString(server.memory))  cpu=\(Format.percent(server.cpu))")
         }
-        print("apps: " + monitor.otherApps.prefix(8).map { "\($0.name) \(Format.bytesString($0.memory))" }.joined(separator: ", "))
         exit(0)
-    }
-
-    @ViewBuilder private static func snapshotPage(monitor: ServerMonitor, route: PopoverRoute, cleaning: Bool) -> some View {
-        switch route {
-        case .servers:
-            ServersView(monitor: monitor, startCleaning: cleaning, openServer: { _ in }, openSettings: {})
-        case .detail(let port):
-            if let server = monitor.server(port: port) {
-                ServerDetailView(server: server, monitor: monitor, back: {})
-            }
-        }
     }
 
     private static func configureAppearance() {

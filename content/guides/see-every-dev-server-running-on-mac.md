@@ -62,14 +62,13 @@ Add up the `rss` column (in kilobytes) for a rough total. Next.js and Storybook 
 
 The commands above answer the question once. If you run more than a couple of servers, or let coding agents start them for you, you’ll want the answer all the time.
 
-[WhatThePort](/) is a free, open-source menu bar app that does exactly what the loop above does, every two seconds: it reads listening sockets with `lsof`, then inspects each process tree for its folder, command, memory and CPU. For each server it shows:
+[Dev Servers](/) is a free, open-source menu bar app. Every two seconds it reads listening sockets with `lsof` and browses the LAN. The popover is one board:
 
-- the port, with a stable color so `:3000` always looks the same
-- the project name from `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod` or `Gemfile`, and the framework
-- the git branch, and whether its worktree has been deleted
-- uptime, memory and CPU for the whole process tree, with ten minutes of history
-- the Claude Code, Codex or Conductor session that started it, if any
+- Mac helpers, local listeners, and LAN devices
+- Open when a host answers HTTP, including 404
+- Firmware-only devices with no Open
+- Open, Start, Restart and Kill on the cards you can control
 
-Press ⌥⌘P to open it, click a server to open it in the browser, or stop it. Open, Start and Kill stay on the card.
+Press ⌥⌘P to open it.
 
 [Download WhatThePort](/WhatThePort.dmg) for Apple Silicon Macs on macOS 14 or later, or [try the interactive demo](/).

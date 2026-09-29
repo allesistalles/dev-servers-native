@@ -71,9 +71,7 @@ Five worktrees means five copies of your framework’s dev server, each with its
 
 ## With WhatThePort
 
-[WhatThePort](/) was built for exactly this setup. Its menu bar list shows every server with its port, project and **branch**, so `:55390 feat/pricing` and `:55400 fix/nav` are easy to tell apart. Each server links back to the Conductor workspace or the Claude Code or Codex session that started it, and a server whose worktree has been deleted is labelled “Worktree deleted”.
-
-**Clean up** preselects those servers, plus any that have been idle for hours, and stops their whole process trees together. Set it to Ask and WhatThePort notifies you when there’s something to clean up; set it to Automatic and it just happens.
+[Dev Servers](/) shows helpers, listeners and LAN devices on one board, with Open, Start, Restart and Kill on the card. It does not bulk-stop servers from deleted worktrees.
 
 The menu bar list shows each server’s folder, branch and session, so you can find the server for a worktree instead of starting another.
 

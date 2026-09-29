@@ -167,38 +167,6 @@ struct PillButtonStyle: ButtonStyle {
     }
 }
 
-/// Small monochrome marks for the agent that started a server.
-struct AgentGlyph: View {
-    let kind: AgentKind
-    var size: CGFloat = 12
-    var color: Color = Theme.text1.opacity(0.75)
-
-    var body: some View {
-        Canvas { context, canvasSize in
-            let s = canvasSize.width / 12
-            switch kind {
-            case .claudeCode:
-                var path = Path()
-                path.move(to: CGPoint(x: 6 * s, y: 1 * s)); path.addLine(to: CGPoint(x: 6 * s, y: 11 * s))
-                path.move(to: CGPoint(x: 1 * s, y: 6 * s)); path.addLine(to: CGPoint(x: 11 * s, y: 6 * s))
-                path.move(to: CGPoint(x: 2.5 * s, y: 2.5 * s)); path.addLine(to: CGPoint(x: 9.5 * s, y: 9.5 * s))
-                path.move(to: CGPoint(x: 9.5 * s, y: 2.5 * s)); path.addLine(to: CGPoint(x: 2.5 * s, y: 9.5 * s))
-                context.stroke(path, with: .color(color), style: StrokeStyle(lineWidth: 1.4 * s, lineCap: .round))
-            case .codex:
-                let box = Path(roundedRect: CGRect(x: 1 * s, y: 1.5 * s, width: 10 * s, height: 9 * s), cornerRadius: 2.5 * s)
-                context.stroke(box, with: .color(color), lineWidth: 1.2 * s)
-                var prompt = Path()
-                prompt.move(to: CGPoint(x: 3.5 * s, y: 5 * s))
-                prompt.addLine(to: CGPoint(x: 5 * s, y: 6.2 * s))
-                prompt.addLine(to: CGPoint(x: 3.5 * s, y: 7.4 * s))
-                prompt.move(to: CGPoint(x: 6.2 * s, y: 7.6 * s)); prompt.addLine(to: CGPoint(x: 8.5 * s, y: 7.6 * s))
-                context.stroke(prompt, with: .color(color), style: StrokeStyle(lineWidth: 1.2 * s, lineCap: .round, lineJoin: .round))
-            }
-        }
-        .frame(width: size, height: size)
-    }
-}
-
 struct Disclosure: View {
     let title: String
     let expanded: Bool

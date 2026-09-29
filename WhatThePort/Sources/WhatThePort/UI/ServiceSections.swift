@@ -19,7 +19,6 @@ struct GroupLabel: View {
 /// stay on the card, the same way the Electron board draws them.
 struct BoardSections: View {
     @ObservedObject var monitor: ServerMonitor
-    let openServer: (Server) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -45,7 +44,7 @@ struct BoardSections: View {
                         .padding(.vertical, 12)
                 } else {
                     ForEach(cards) { card in
-                        BoardCard(item: card, monitor: monitor, openServer: openServer)
+                        BoardCard(item: card, monitor: monitor)
                     }
                 }
             }
@@ -76,19 +75,19 @@ struct BoardSections: View {
         if !view.attention.isEmpty {
             GroupLabel(title: L10n.text("Needs attention"))
             ForEach(view.attention) { card in
-                BoardCard(item: card, monitor: monitor, openServer: openServer)
+                BoardCard(item: card, monitor: monitor)
             }
         }
         if !view.pinned.isEmpty {
             GroupLabel(title: L10n.text("Pinned"))
             ForEach(view.pinned) { card in
-                BoardCard(item: card, monitor: monitor, openServer: openServer)
+                BoardCard(item: card, monitor: monitor)
             }
         }
         if !view.fleet.isEmpty {
             GroupLabel(title: L10n.text("On the network"))
             ForEach(view.fleet) { card in
-                BoardCard(item: card, monitor: monitor, openServer: openServer)
+                BoardCard(item: card, monitor: monitor)
             }
         }
         if view.attention.isEmpty && view.pinned.isEmpty && view.fleet.isEmpty {
@@ -105,7 +104,6 @@ struct BoardSections: View {
 private struct BoardCard: View {
     let item: BoardItem
     @ObservedObject var monitor: ServerMonitor
-    let openServer: (Server) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -166,10 +164,6 @@ private struct BoardCard: View {
     }
 
     private func activate() {
-        if item.source == "local", let server = monitor.server(port: item.port), item.kind != "system", item.kind != "sidecar" {
-            openServer(server)
-            return
-        }
         monitor.open(item)
     }
 }
